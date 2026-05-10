@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 10, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/Mam23/OneDrive/%E0%B9%80%E0%B8%AD%E0%B8%81%E0%B8%AA%E0%B8%B2%E0%B8%A3/GitHub/ouran_ratsadon/apps/web/app/%28dashboard%29/compare/page.tsx"],"sourcesContent":["export default function ComparePage() {\r\n  return (\r\n    <div>\r\n      <h1 className=\"text-2xl font-bold mb-6\">เปรียบเทียบไฟล์</h1>\r\n      <p className=\"text-sm text-[#7F77DD] bg-purple-50 rounded-md px-3 py-2 inline-block mb-6\">\r\n        ฟีเจอร์นี้สำหรับสมาชิก Pro เท่านั้น\r\n      </p>\r\n    </div>\r\n  );\r\n}\r\n"],"names":["ComparePage","className"],"mappings":";;;;;;AAAe,SAASA;IACtB,qBACE,8OAAC;;0BACC,8OAAC;gBAAGC,WAAU;0BAA0B;;;;;;0BACxC,8OAAC;gBAAEA,WAAU;0BAA6E;;;;;;;;;;;;AAKhG"}}]
+}

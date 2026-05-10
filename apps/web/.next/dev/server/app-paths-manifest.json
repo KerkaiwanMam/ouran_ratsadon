@@ -1,0 +1,10 @@
+{
+  "/(dashboard)/compare/page": "app/(dashboard)/compare/page.js",
+  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
+  "/(dashboard)/files/page": "app/(dashboard)/files/page.js",
+  "/(dashboard)/settings/profile/page": "app/(dashboard)/settings/profile/page.js",
+  "/(dashboard)/upgrade/page": "app/(dashboard)/upgrade/page.js",
+  "/(dashboard)/upload/page": "app/(dashboard)/upload/page.js",
+  "/(public)/pricing/page": "app/(public)/pricing/page.js",
+  "/page": "app/page.js"
+}

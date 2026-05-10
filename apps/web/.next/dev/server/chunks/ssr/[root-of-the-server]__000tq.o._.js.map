@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 10, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/Mam23/OneDrive/%E0%B9%80%E0%B8%AD%E0%B8%81%E0%B8%AA%E0%B8%B2%E0%B8%A3/GitHub/ouran_ratsadon/apps/web/app/%28dashboard%29/upload/page.tsx"],"sourcesContent":["export default function UploadPage() {\r\n  return (\r\n    <div>\r\n      <h1 className=\"text-2xl font-bold mb-6\">อัปโหลดไฟล์</h1>\r\n      <div className=\"border-2 border-dashed border-[#7F77DD] rounded-lg p-16 flex flex-col items-center justify-center text-center\">\r\n        <p className=\"text-lg font-medium mb-2\">ลากไฟล์มาวางที่นี่</p>\r\n        <p className=\"text-sm text-gray-500 mb-4\">รองรับ PDF และ Excel (.xlsx, .xls) ขนาดไม่เกิน 50MB</p>\r\n        <button className=\"px-6 py-2 bg-[#7F77DD] text-white rounded-md hover:bg-[#534AB7] transition-colors\">\r\n          เลือกไฟล์\r\n        </button>\r\n      </div>\r\n    </div>\r\n  );\r\n}\r\n"],"names":["UploadPage","className"],"mappings":";;;;;;AAAe,SAASA;IACtB,qBACE,8OAAC;;0BACC,8OAAC;gBAAGC,WAAU;0BAA0B;;;;;;0BACxC,8OAAC;gBAAIA,WAAU;;kCACb,8OAAC;wBAAEA,WAAU;kCAA2B;;;;;;kCACxC,8OAAC;wBAAEA,WAAU;kCAA6B;;;;;;kCAC1C,8OAAC;wBAAOA,WAAU;kCAAoF;;;;;;;;;;;;;;;;;;AAM9G"}}]
+}

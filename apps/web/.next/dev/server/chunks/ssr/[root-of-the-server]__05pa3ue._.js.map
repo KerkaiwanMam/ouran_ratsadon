@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 10, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/Mam23/OneDrive/%E0%B9%80%E0%B8%AD%E0%B8%81%E0%B8%AA%E0%B8%B2%E0%B8%A3/GitHub/ouran_ratsadon/apps/web/app/%28public%29/features/page.tsx"],"sourcesContent":["export default function FeaturesPage() {\r\n  return (\r\n    <main className=\"max-w-4xl mx-auto px-4 py-16\">\r\n      <h1 className=\"text-3xl font-bold mb-6\">ฟีเจอร์ทั้งหมด</h1>\r\n      <p className=\"text-gray-600\">เปรียบเทียบ Free vs Pro และฟีเจอร์ทั้งหมดของแพลตฟอร์ม</p>\r\n    </main>\r\n  );\r\n}\r\n"],"names":["FeaturesPage","className"],"mappings":";;;;;;AAAe,SAASA;IACtB,qBACE,8OAAC;QAAKC,WAAU;;0BACd,8OAAC;gBAAGA,WAAU;0BAA0B;;;;;;0BACxC,8OAAC;gBAAEA,WAAU;0BAAgB;;;;;;;;;;;;AAGnC"}}]
+}
