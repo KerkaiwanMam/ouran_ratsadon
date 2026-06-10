@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Mam23\\\\OneDrive\\\\เอกสาร\\\\GitHub\\\\ouran_ratsadon\\\\apps\\\\web\\\\app\" -Recurse -File)",
+      "Bash(Select-Object FullName)",
+      "Read(//c/Users/Mam23/OneDrive/�͡���/GitHub/ouran_ratsadon/apps/web/**)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Mam23\\\\OneDrive\\\\เอกสาร\\\\GitHub\\\\ouran_ratsadon\\\\apps\\\\web\\\\app\" -Recurse | ForEach-Object { if \\($_.PSIsContainer\\) { $_.FullName + \" [DIR]\" } else { $_.FullName } })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Mam23\\\\OneDrive\\\\เอกสาร\\\\GitHub\\\\ouran_ratsadon\\\\apps\\\\web\\\\components\" -Recurse | ForEach-Object { if \\($_.PSIsContainer\\) { $_.FullName + \" [DIR]\" } else { $_.FullName } })",
+      "Skill(ui-ux-pro-max)",
+      "Skill(ui-ux-pro-max:*)",
+      "Bash(python skills/ui-ux-pro-max/scripts/search.py \"civic dashboard govtech data analytics minimalism dark mode\" --design-system -p \"อุรัณ รัษฎร\")",
+      "Bash(py --version)",
+      "Bash(py skills/ui-ux-pro-max/scripts/search.py \"civic dashboard govtech data analytics minimalism dark mode\" --design-system -p \"ouran_ratsadon\")",
+      "Bash(py \".claude/skills/ui-ux-pro-max/scripts/search.py\" \"civic dashboard govtech data analytics minimalism dark mode\" --design-system -p \"ouran_ratsadon\")",
+      "PowerShell(& \"C:\\\\Program Files\\\\Python312\\\\python.exe\" \"C:\\\\Users\\\\Mam23\\\\OneDrive\\\\�͡���\\\\GitHub\\\\ouran_ratsadon\\\\.claude\\\\skills\\\\ui-ux-pro-max\\\\scripts\\\\search.py\" \"civic dashboard govtech data analytics minimalism dark mode\" --design-system -p \"ouran_ratsadon\" 2>&1)",
+      "PowerShell(& \"C:\\\\Program Files\\\\Python312\\\\python.exe\" \"C:\\\\Users\\\\Mam23\\\\OneDrive\\\\�͡���\\\\GitHub\\\\ouran_ratsadon\\\\.claude\\\\skills\\\\ui-ux-pro-max\\\\scripts\\\\search.py\" \"navbar sidebar footer mobile menu dark mode\" --stack nextjs 2>&1)",
+      "PowerShell(& \"C:\\\\Program Files\\\\Python312\\\\python.exe\" \"C:\\\\Users\\\\Mam23\\\\OneDrive\\\\�͡���\\\\GitHub\\\\ouran_ratsadon\\\\.claude\\\\skills\\\\ui-ux-pro-max\\\\scripts\\\\search.py\" \"accessibility navigation responsive mobile\" --domain ux -n 5 2>&1)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Mam23\\.claude\\projects\\c--Users-Mam23-OneDrive--------GitHub-ouran-ratsadon\\memory"
+    ]
+  }
+}

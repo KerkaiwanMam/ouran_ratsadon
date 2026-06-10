@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ouran_ratsadon — Next.js API Reference</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a;
+    --primary: #7F77DD; --primary-light: #a09ae8;
+    --text: #e2e8f0; --muted: #8892a4; --code-bg: #151823;
+    --green: #4ade80; --yellow: #facc15; --red: #f87171; --blue: #60a5fa; --orange: #fb923c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size: 14px; line-height: 1.6; }
+
+  /* Layout */
+  .sidebar { position: fixed; top: 0; left: 0; width: 260px; height: 100vh; background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; padding: 20px 0; z-index: 100; }
+  .main { margin-left: 260px; padding: 40px 48px; max-width: 960px; }
+
+  /* Sidebar */
+  .sidebar-logo { padding: 0 20px 20px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+  .sidebar-logo h2 { font-size: 13px; font-weight: 700; color: var(--primary-light); letter-spacing: .5px; }
+  .sidebar-logo p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .sidebar-group { padding: 0 12px; margin-bottom: 4px; }
+  .sidebar-group-label { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; padding: 8px 8px 4px; }
+  .sidebar-link { display: block; padding: 5px 8px; border-radius: 6px; font-size: 12.5px; color: var(--muted); text-decoration: none; cursor: pointer; transition: all .15s; }
+  .sidebar-link:hover, .sidebar-link.active { background: rgba(127,119,221,.12); color: var(--primary-light); }
+
+  /* Page header */
+  .page-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .page-header h1 { font-size: 26px; font-weight: 700; color: #fff; }
+  .page-header p { color: var(--muted); margin-top: 8px; font-size: 13px; }
+  .base-url { display: inline-block; background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-family: monospace; font-size: 12px; margin-top: 12px; color: var(--primary-light); }
+
+  /* Section */
+  .section { margin-bottom: 56px; }
+  .section-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .section-title .tag-badge { font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+
+  /* Endpoint card */
+  .endpoint { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+  .endpoint-header { display: flex; align-items: center; gap: 12px; padding: 14px 18px; cursor: pointer; user-select: none; }
+  .endpoint-header:hover { background: rgba(255,255,255,.02); }
+  .method { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 5px; min-width: 50px; text-align: center; letter-spacing: .5px; font-family: monospace; }
+  .method.GET    { background: rgba(74,222,128,.15); color: var(--green); }
+  .method.POST   { background: rgba(96,165,250,.15); color: var(--blue); }
+  .method.PATCH  { background: rgba(251,146,60,.15); color: var(--orange); }
+  .method.DELETE { background: rgba(248,113,113,.15); color: var(--red); }
+  .path { font-family: monospace; font-size: 13px; color: #fff; flex: 1; }
+  .summary { font-size: 12px; color: var(--muted); }
+  .badges { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
+  .badge { font-size: 10px; padding: 2px 7px; border-radius: 99px; font-weight: 600; }
+  .badge.auth  { background: rgba(127,119,221,.2); color: var(--primary-light); }
+  .badge.pro   { background: rgba(250,204,21,.15); color: var(--yellow); }
+  .badge.admin { background: rgba(248,113,113,.15); color: var(--red); }
+  .badge.team  { background: rgba(74,222,128,.15); color: var(--green); }
+  .chevron { color: var(--muted); font-size: 12px; transition: transform .2s; }
+  .endpoint.open .chevron { transform: rotate(90deg); }
+
+  /* Endpoint body */
+  .endpoint-body { display: none; padding: 0 18px 18px; border-top: 1px solid var(--border); }
+  .endpoint.open .endpoint-body { display: block; }
+  .endpoint-body h4 { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin: 16px 0 8px; }
+  .params-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .params-table th { text-align: left; padding: 6px 10px; background: var(--code-bg); color: var(--muted); font-weight: 600; font-size: 11px; }
+  .params-table td { padding: 6px 10px; border-top: 1px solid var(--border); vertical-align: top; }
+  .params-table td:first-child { font-family: monospace; color: var(--primary-light); }
+  .params-table td:nth-child(2) { color: var(--yellow); font-family: monospace; font-size: 11px; }
+  .required { color: var(--red); font-size: 10px; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; overflow-x: auto; font-family: monospace; font-size: 12px; line-height: 1.7; margin-top: 4px; }
+  .error-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .error-chip { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 10px; font-size: 11px; font-family: monospace; }
+  .note { background: rgba(127,119,221,.08); border-left: 3px solid var(--primary); border-radius: 0 6px 6px 0; padding: 8px 12px; font-size: 12px; color: var(--muted); margin-top: 12px; }
+  .plan-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .plan-table th, .plan-table td { padding: 8px 12px; text-align: center; border: 1px solid var(--border); }
+  .plan-table th { background: var(--code-bg); color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+  .plan-table td:first-child { text-align: left; }
+  .check { color: var(--green); } .cross { color: var(--muted); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <h2>OURAN API</h2>
+    <p>Next.js API Reference</p>
+  </div>
+  <div class="sidebar-group">
+    <div class="sidebar-group-label">General</div>
+    <a class="sidebar-link" onclick="scrollTo('auth')">🔐 Authentication</a>
+  </div>
+  <div class="sidebar-group">
+    <div class="sidebar-group-label">Civic Layer</div>
+    <a class="sidebar-link" onclick="scrollTo('civic')">🏛 Budget Data</a>
+    <a class="sidebar-link" onclick="scrollTo('export')">📥 Export</a>
+  </div>
+  <div class="sidebar-group">
+    <div class="sidebar-group-label">Business Layer</div>
+    <a class="sidebar-link" onclick="scrollTo('files')">📁 Files</a>
+    <a class="sidebar-link" onclick="scrollTo('dashboard')">📊 Dashboard</a>
+    <a class="sidebar-link" onclick="scrollTo('analytics')">🔬 Analytics</a>
+    <a class="sidebar-link" onclick="scrollTo('subscription')">💳 Subscription</a>
+    <a class="sidebar-link" onclick="scrollTo('workspace')">👥 Workspace</a>
+  </div>
+  <div class="sidebar-group">
+    <div class="sidebar-group-label">Settings</div>
+    <a class="sidebar-link" onclick="scrollTo('settings')">🔔 Notifications</a>
+    <a class="sidebar-link" onclick="scrollTo('developer')">🔑 API Keys</a>
+  </div>
+  <div class="sidebar-group">
+    <div class="sidebar-group-label">Admin</div>
+    <a class="sidebar-link" onclick="scrollTo('admin')">⚙️ Admin</a>
+  </div>
+  <div class="sidebar-group">
+    <div class="sidebar-group-label">Reference</div>
+    <a class="sidebar-link" onclick="scrollTo('plans')">📋 Plan Gating</a>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+  <div class="page-header">
+    <h1>ouran_ratsadon — Next.js API Reference</h1>
+    <p>ทุก endpoint ใน Next.js App Router · 47 routes</p>
+    <div class="base-url">Base URL: http://localhost:3000</div>
+    <div style="margin-top:10px;font-size:12px;color:var(--muted);">
+      Auth: JWT cookie <code>auth_token</code> หรือ <code>Authorization: Bearer &lt;token&gt;</code> header<br>
+      Error format: <code>{ "error": "ERROR_CODE", "message": "ข้อความภาษาไทย" }</code>
+    </div>
+  </div>
+
+  <!-- AUTH -->
+  <div class="section" id="auth">
+    <div class="section-title">🔐 Authentication <span class="tag-badge" style="background:rgba(127,119,221,.2);color:var(--primary-light)">6 endpoints</span></div>
+
+    <!-- Register -->
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="path">/api/auth/register</span>
+        <span class="summary">สมัครสมาชิก (ได้รับ 14-day Pro Trial)</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Request Body</h4>
+        <table class="params-table"><tr><th>Field</th><th>Type</th><th>Required</th><th>Note</th></tr>
+          <tr><td>email</td><td>string</td><td><span class="required">✓</span></td><td>RFC email format</td></tr>
+          <tr><td>password</td><td>string</td><td><span class="required">✓</span></td><td>min 8 chars</td></tr>
+          <tr><td>name</td><td>string</td><td><span class="required">✓</span></td><td>ชื่อผู้ใช้</td></tr>
+        </table>
+        <h4>Response 201</h4>
+        <pre>{ "user": { "id": "cuid", "email": "...", "name": "สมชาย", "role": "MEMBER", "createdAt": "..." } }</pre>
+        <div class="note">Sets <code>auth_token</code> httpOnly cookie อัตโนมัติ</div>
+        <h4>Errors</h4>
+        <div class="error-list">
+          <span class="error-chip">400 INVALID_INPUT</span><span class="error-chip">400 INVALID_EMAIL</span>
+          <span class="error-chip">400 WEAK_PASSWORD</span><span class="error-chip">409 EMAIL_TAKEN</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Login -->
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="path">/api/auth/login</span>
+        <span class="summary">เข้าสู่ระบบ (email/password)</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Request Body</h4>
+        <table class="params-table"><tr><th>Field</th><th>Type</th><th>Required</th></tr>
+          <tr><td>email</td><td>string</td><td><span class="required">✓</span></td></tr>
+          <tr><td>password</td><td>string</td><td><span class="required">✓</span></td></tr>
+        </table>
+        <h4>Response 200</h4>
+        <pre>{ "user": { "id", "email", "name", "role", "avatarUrl", "organization", "createdAt" },
+  "subscription": { "plan": "PRO", "status": "TRIAL", "currentPeriodEnd": "...", "cancelAtPeriodEnd": false } }</pre>
+        <h4>Errors</h4>
+        <div class="error-list">
+          <span class="error-chip">400 INVALID_INPUT</span><span class="error-chip">401 INVALID_CREDENTIALS</span><span class="error-chip">403 ACCOUNT_BANNED</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logout -->
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="path">/api/auth/logout</span>
+        <span class="summary">ออกจากระบบ (ล้าง cookie)</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4>
+        <pre>{ "success": true }</pre>
+      </div>
+    </div>
+
+    <!-- Me -->
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/auth/me</span>
+        <span class="summary">ข้อมูล user ปัจจุบัน</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4>
+        <pre>{ "user": { ... }, "subscription": { ... } }</pre>
+        <h4>Errors</h4>
+        <div class="error-list"><span class="error-chip">401 UNAUTHORIZED</span></div>
+      </div>
+    </div>
+
+    <!-- Google OAuth -->
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/auth/google</span>
+        <span class="summary">เริ่ม Google OAuth → redirect ไป Google</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response</h4>
+        <pre>302 Redirect → https://accounts.google.com/o/oauth2/v2/auth?...</pre>
+        <h4>Errors</h4>
+        <div class="error-list"><span class="error-chip">503 OAUTH_NOT_CONFIGURED</span></div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/auth/google/callback</span>
+        <span class="summary">OAuth callback — แลก code เป็น JWT</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="note">Internal — Google redirects here หลัง user ยืนยัน OAuth</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CIVIC -->
+  <div class="section" id="civic">
+    <div class="section-title">🏛 Civic Layer <span class="tag-badge" style="background:rgba(74,222,128,.15);color:var(--green)">Public — ไม่ต้อง login</span></div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/civic/years</span>
+        <span class="summary">รายการปีงบประมาณที่มีข้อมูล</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4>
+        <pre>{ "years": ["2567","2568"], "current": "2568", "last_updated": "2024-10-01T08:00:00Z" }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/civic/budget/[year]</span>
+        <span class="summary">สรุปงบประมาณรายปี + รายการกระทรวงทั้งหมด</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Path Params</h4>
+        <table class="params-table"><tr><th>Param</th><th>Type</th><th>Example</th></tr>
+          <tr><td>year</td><td>string</td><td>2568</td></tr>
+        </table>
+        <h4>Response 200</h4>
+        <pre>{ "fiscalYear": "2568", "totalBudget": 3480000000000, "ministryCount": 20,
+  "projectCount": 4200, "redFlagCount": 87, "ministries": [...],
+  "ministriesWithDepts": [...], "metadata": { "source": "สำนักงบประมาณ", "parsed_at": "..." } }</pre>
+        <h4>Errors</h4>
+        <div class="error-list"><span class="error-chip">404 NOT_FOUND</span></div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/civic/search</span>
+        <span class="summary">ค้นหาโครงการ — filter + sort + pagination</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Query Params</h4>
+        <table class="params-table"><tr><th>Param</th><th>Type</th><th>Default</th><th>Note</th></tr>
+          <tr><td>year</td><td>string</td><td>ปีล่าสุด</td><td></td></tr>
+          <tr><td>q</td><td>string</td><td>—</td><td>ค้นหาชื่อโครงการ</td></tr>
+          <tr><td>ministries[]</td><td>string[]</td><td>—</td><td>กรองกระทรวง</td></tr>
+          <tr><td>budgetTypes[]</td><td>string[]</td><td>—</td><td>operating / capital</td></tr>
+          <tr><td>minAmount / maxAmount</td><td>number</td><td>—</td><td>งบประมาณ (บาท)</td></tr>
+          <tr><td>sort</td><td>string</td><td>amount_desc</td><td>amount_asc / name_asc / change_desc</td></tr>
+          <tr><td>page / limit</td><td>number</td><td>1 / 20</td><td>limit สูงสุด 100</td></tr>
+        </table>
+        <h4>Response 200</h4>
+        <pre>{ "total": 1234, "page": 1, "limit": 20,
+  "stats": { "totalAmount": 98000000000, "redFlagCount": 12, "avgIncreasePct": 4.2, "categoryBreakdown": [...] },
+  "results": [{ "id", "name", "ministryName", "amount", "changePct", "province", "budgetType", "flags": [...] }] }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/civic/project/[id]</span>
+        <span class="summary">รายละเอียดโครงการ + related projects</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Query Params</h4>
+        <table class="params-table"><tr><th>Param</th><th>Default</th></tr>
+          <tr><td>year</td><td>ปีล่าสุด</td></tr>
+        </table>
+        <h4>Response 200</h4>
+        <pre>{ ...project, "ministry": { "id", "name" }, "department": { "id", "name" },
+  "relatedProjects": [...], "source": { "name": "สำนักงบประมาณ", "section": "..." } }</pre>
+        <h4>Errors</h4>
+        <div class="error-list"><span class="error-chip">404 NOT_FOUND</span></div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/civic/dept-projects</span>
+        <span class="summary">โครงการใน department (lazy-load Treemap level 3)</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Query Params (ทั้ง 3 required)</h4>
+        <table class="params-table"><tr><th>Param</th><th>Required</th></tr>
+          <tr><td>year</td><td><span class="required">✓</span></td></tr>
+          <tr><td>ministryId</td><td><span class="required">✓</span></td></tr>
+          <tr><td>deptId</td><td><span class="required">✓</span></td></tr>
+        </table>
+        <h4>Response 200</h4>
+        <pre>{ "deptId", "deptName", "totalBudget", "totalProjectCount", "shownCount": 50, "projects": [...] }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/civic/fiscal</span>
+        <span class="summary">ข้อมูลการคลังมหภาค (รายได้/รายจ่าย/หนี้ฯ) ทุกปี</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4>
+        <pre>{ "source": "db",
+  "data": [{ "fiscalYear": "2560", "totalRevenue": 2450000000000,
+    "totalExpenditure": 2733000000000, "balance": -283000000000,
+    "publicDebt": 6200000000000, "gdpEstimate": 15450000000000,
+    "debtToGdpPct": 40.1, "source": "สศค.", "sourceNotes": null }] }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/civic/project/[id]/rating</span>
+        <span class="summary">คะแนนโหวตสาธารณะของโครงการ</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4>
+        <pre>{ "projectId": "proj-001", "total": 42, "counts": { "too_high": 28, "appropriate": 10, "too_low": 4 } }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="path">/api/civic/project/[id]/rating</span>
+        <span class="summary">โหวตงบโครงการ (1 vote/user หรือ 1 vote/IP)</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Request Body</h4>
+        <pre>{ "vote": "too_high" | "appropriate" | "too_low" }</pre>
+        <h4>Response 200</h4>
+        <pre>{ "projectId", "total", "counts": {...}, "myVote": "too_high" }</pre>
+        <h4>Errors</h4>
+        <div class="error-list"><span class="error-chip">400 INVALID_INPUT</span></div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/civic/comments</span>
+        <span class="summary">ความคิดเห็นโครงการ (เฉพาะ approved)</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Query Params</h4>
+        <table class="params-table"><tr><th>Param</th><th>Required</th></tr>
+          <tr><td>projectId</td><td><span class="required">✓</span></td></tr>
+          <tr><td>page</td><td>—</td></tr>
+        </table>
+        <h4>Response 200</h4>
+        <pre>{ "total": 15, "page": 1, "limit": 20, "hasMore": false,
+  "comments": [{ "id", "body", "createdAt", "authorName", "authorAvatar", "isGuest" }] }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="path">/api/civic/comments</span>
+        <span class="summary">โพสต์ความคิดเห็น — Rate limit: 3/นาที/IP</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Request Body</h4>
+        <table class="params-table"><tr><th>Field</th><th>Type</th><th>Required</th><th>Note</th></tr>
+          <tr><td>projectId</td><td>string</td><td><span class="required">✓</span></td><td></td></tr>
+          <tr><td>body</td><td>string</td><td><span class="required">✓</span></td><td>5–1000 ตัวอักษร</td></tr>
+          <tr><td>guestName</td><td>string</td><td>ถ้าไม่ login</td><td>ชื่อ guest</td></tr>
+        </table>
+        <h4>Response 201</h4>
+        <pre>{ "comment": { "id", "status": "PENDING_REVIEW" | "VISIBLE", "message": "..." } }</pre>
+        <div class="note">Login แล้ว → VISIBLE อัตโนมัติ · Guest → PENDING_REVIEW รอ admin อนุมัติ</div>
+        <h4>Errors</h4>
+        <div class="error-list"><span class="error-chip">400 BAD_REQUEST</span><span class="error-chip">429 RATE_LIMIT</span></div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/civic/saved-searches</span>
+        <span class="summary">รายการ saved searches</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4>
+        <pre>{ "searches": [...] }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="path">/api/civic/saved-searches</span>
+        <span class="summary">บันทึก search filter</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Request Body</h4>
+        <pre>{ "label": "ชื่อที่บันทึก", "filters": {...}, "resultCount": 42 }</pre>
+        <h4>Errors</h4>
+        <div class="error-list"><span class="error-chip">429 LIMIT_EXCEEDED (max 20)</span></div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method DELETE">DELETE</span>
+        <span class="path">/api/civic/saved-searches?id=xxx</span>
+        <span class="summary">ลบ saved search</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4><pre>{ "ok": true }</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPORT -->
+  <div class="section" id="export">
+    <div class="section-title">📥 Export</div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/civic/export/csv</span>
+        <span class="summary">ดาวน์โหลด search results เป็น CSV (UTF-8 BOM)</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="note">Query params เดียวกับ /api/civic/search ยกเว้น page/limit — export ครบทุก row<br>
+        Response: <code>text/csv</code> · Filename: <code>search-results-{year}.csv</code></div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/civic/export/json?year=2568</span>
+        <span class="summary">ดาวน์โหลด full budget dataset เป็น JSON (Open Data)</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="note">Response: <code>application/json</code> · Cache: 1 hour · Filename: <code>budget-{year}.json</code></div>
+        <h4>Errors</h4>
+        <div class="error-list"><span class="error-chip">400 BAD_REQUEST</span><span class="error-chip">404 NOT_FOUND</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILES -->
+  <div class="section" id="files">
+    <div class="section-title">📁 Business — Files <span class="tag-badge" style="background:rgba(127,119,221,.2);color:var(--primary-light)">🔒 Auth required</span></div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/files</span>
+        <span class="summary">รายการไฟล์ที่อัปโหลดทั้งหมด</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4>
+        <pre>{ "total": 3, "files": [{ "id", "filename", "fileSize", "sourceFormat",
+  "status": "DONE", "transactionCount": 48, "totalIncome": 450000,
+  "totalExpense": 280000, "periodStart", "periodEnd", "leakCount": 2 }] }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="path">/api/files/upload</span>
+        <span class="summary">อัปโหลดไฟล์การเงิน + auto-categorize + leak detection</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Request (multipart/form-data)</h4>
+        <table class="params-table"><tr><th>Field</th><th>Type</th><th>Required</th><th>Note</th></tr>
+          <tr><td>file</td><td>File</td><td><span class="required">✓</span></td><td>Excel/CSV · Free: 10MB · Pro: 50MB</td></tr>
+          <tr><td>source_format</td><td>string</td><td>—</td><td>EXCEL_TEMPLATE (default)</td></tr>
+          <tr><td>force</td><td>string</td><td>—</td><td>"true" = อนุญาต re-upload ซ้ำ</td></tr>
+        </table>
+        <h4>Response 201</h4>
+        <pre>{ "file": { "id", "filename", "status": "DONE", "transactionCount": 45 },
+  "dedup": { "imported": 45, "skippedExactDuplicates": 3, "flaggedChanged": 0 } }</pre>
+        <h4>Errors</h4>
+        <div class="error-list">
+          <span class="error-chip">429 QUOTA_EXCEEDED</span><span class="error-chip">409 DUPLICATE_FILE</span>
+          <span class="error-chip">413 FILE_TOO_LARGE</span><span class="error-chip">422 PARSE_ERROR</span>
+        </div>
+        <div class="note">409 DUPLICATE_FILE มี <code>existingFile</code> object — UI ควรถามยืนยันก่อน re-upload ด้วย <code>force=true</code></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="section" id="dashboard">
+    <div class="section-title">📊 Business — Dashboard & Leaks</div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/business/dashboard</span>
+        <span class="summary">สรุปรายรับ-รายจ่าย + รายการล่าสุด</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4>
+        <pre>{ "hasData": true,
+  "summary": { "totalIncome": 450000, "totalExpense": 280000, "netCashFlow": 170000,
+    "period": "2024-03", "categories": [{ "name", "amount", "percentage", "trendPct", "isNew", "budgetAmount" }] },
+  "transactions": [{ "id", "description", "category", "amount", "transactionType",
+    "date", "leakFlag", "leakSeverity", "leakReason" }] }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/business/leaks</span>
+        <span class="summary">รายการธุรกรรมที่ตรวจพบความผิดปกติ</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span><span class="badge pro">⭐ Pro</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Query Params</h4>
+        <table class="params-table"><tr><th>Param</th><th>Values</th></tr>
+          <tr><td>flag</td><td>MONTHLY_SPIKE / DUPLICATE_PAYMENT / OUTLIER / RECURRING_CREEP / DUPLICATE</td></tr>
+          <tr><td>fileId</td><td>กรองตาม file</td></tr>
+          <tr><td>page</td><td>default 1 (page size 20)</td></tr>
+        </table>
+        <h4>Response 200</h4>
+        <pre>{ "total": 15, "page": 1, "pages": 1,
+  "flagCounts": { "OUTLIER": 8, "MONTHLY_SPIKE": 5, "DUPLICATE_PAYMENT": 2 },
+  "items": [{ "id", "date", "description", "amount", "leakFlag", "leakSeverity", "leakReason", "file": {...} }] }</pre>
+        <h4>Errors</h4>
+        <div class="error-list"><span class="error-chip">403 PLAN_REQUIRED</span></div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/business/forecast</span>
+        <span class="summary">พยากรณ์กระแสเงินสด WMA + Seasonal Index</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span><span class="badge pro">⭐ Pro</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Query Params</h4>
+        <table class="params-table"><tr><th>Param</th><th>Default</th><th>Range</th></tr>
+          <tr><td>horizon</td><td>6</td><td>3–12 เดือน</td></tr>
+          <tr><td>currentCash</td><td>0</td><td>ยอดเงินคงเหลือปัจจุบัน</td></tr>
+        </table>
+        <h4>Response 200</h4>
+        <pre>{ "sufficiency": "sufficient" | "marginal" | "insufficient",
+  "monthsOfData": 6, "historical": [...], "forecast": [...],
+  "runway": 14, "disclaimer": "การพยากรณ์ใช้ WMA + Seasonal Index — ไม่ใช่ AI" }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/business/budgets?month=2024-03</span>
+        <span class="summary">ดูงบประมาณที่ตั้งไว้ต่อหมวดหมู่</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4>
+        <pre>{ "budgets": [{ "category": "บุคลากร", "amount": 65000, "month": "2024-03" }] }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="path">/api/business/budgets</span>
+        <span class="summary">ตั้งงบประมาณต่อหมวดหมู่ (upsert)</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Request Body</h4>
+        <pre>{ "category": "บุคลากร", "amount": 65000, "month": "2024-03" }
+// month = null สำหรับ standing budget</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method DELETE">DELETE</span>
+        <span class="path">/api/business/budgets?category=บุคลากร&month=2024-03</span>
+        <span class="summary">ลบงบประมาณที่ตั้งไว้</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body"><h4>Response 200</h4><pre>{ "ok": true }</pre></div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/business/alerts?unread=true</span>
+        <span class="summary">การแจ้งเตือนของ user</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4><pre>{ "alerts": [...], "unreadCount": 3 }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method PATCH">PATCH</span>
+        <span class="path">/api/business/alerts</span>
+        <span class="summary">อ่าน / dismiss alerts</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Request Body</h4>
+        <pre>{ "ids": ["id1","id2"], "action": "read" | "dismiss" }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/business/report/[id]/export/pdf</span>
+        <span class="summary">ข้อมูลสำหรับ render PDF report</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span><span class="badge pro">⭐ Pro</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4>
+        <pre>{ "file": {...}, "user": {...}, "summary": { totalIncome, totalExpense, netCashFlow, leakCount },
+  "categories": [...], "leaks": [...] }</pre>
+        <h4>Errors</h4>
+        <div class="error-list"><span class="error-chip">403 PLAN_REQUIRED</span><span class="error-chip">404 NOT_FOUND</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANALYTICS -->
+  <div class="section" id="analytics">
+    <div class="section-title">🔬 Business — Analytics (4 Tiers)</div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/business/analytics/summary?range=6</span>
+        <span class="summary">Tier 1 Descriptive — "เกิดอะไรขึ้น?" (month × category rollups)</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body"><div class="note"><code>range</code> = จำนวนเดือนย้อนหลัง (1–24, default 6)</div></div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/business/analytics/diagnose?limit=20</span>
+        <span class="summary">Tier 2 Diagnostic — "ทำไมถึงเป็นอย่างนี้?" (z-score insights)</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4>
+        <pre>{ "insights": [{ "category": "การตลาด", "insightType": "SPIKE", "message": "ค่าโฆษณาสูงกว่าค่าเฉลี่ย 3.2 เท่า" }] }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/business/analytics/forecast</span>
+        <span class="summary">Tier 3 Predictive — ดึง ForecastSnapshot ล่าสุด</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span><span class="badge pro">⭐ Pro</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4>
+        <pre>{ "snapshot": { "predictedIncome": 462000, "predictedExpense": 285000, "method": "WMA+Seasonal", "inputWindow": 6 } | null }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span>
+        <span class="path">/api/business/analytics/forecast</span>
+        <span class="summary">Tier 3 Predictive — คำนวณ forecast ใหม่ + persist</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span><span class="badge pro">⭐ Pro</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Request Body (optional)</h4>
+        <pre>{ "currentCash": 100000 }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span>
+        <span class="path">/api/business/analytics/recommendations?status=PENDING</span>
+        <span class="summary">Tier 4 Prescriptive — "ควรทำอะไร?" (if-then rules)</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4>
+        <pre>{ "recommendations": [{ "id", "title": "ลดค่าโฆษณาลง 20%", "detail", "priority": "HIGH", "status": "PENDING" }] }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method PATCH">PATCH</span>
+        <span class="path">/api/business/analytics/recommendations/[id]</span>
+        <span class="summary">Apply หรือ Dismiss recommendation</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Request Body</h4>
+        <pre>{ "status": "APPLIED" | "DISMISSED" }</pre>
+        <h4>Errors</h4>
+        <div class="error-list"><span class="error-chip">400 INVALID_STATUS</span><span class="error-chip">404 NOT_FOUND</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUBSCRIPTION -->
+  <div class="section" id="subscription">
+    <div class="section-title">💳 Subscription & Payments</div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span><span class="path">/api/subscription</span>
+        <span class="summary">ข้อมูล subscription ปัจจุบัน (auto-expire trial)</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4>
+        <pre>{ "plan": "PRO", "status": "TRIAL", "trialEndsAt": "...", "currentPeriodEnd": "..." }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span><span class="path">/api/subscription/checkout</span>
+        <span class="summary">สร้าง Stripe Checkout session (หรือ mock ถ้าไม่มี key)</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Request Body</h4>
+        <pre>{ "plan": "PRO" | "TEAM", "billing": "monthly" | "yearly" }</pre>
+        <h4>Response 200</h4>
+        <pre>{ "checkout_url": "https://checkout.stripe.com/..." }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span><span class="path">/api/webhooks/stripe</span>
+        <span class="summary">Stripe webhook — checkout.completed / invoice.paid / subscription.deleted</span>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="note">Auth: <code>Stripe-Signature</code> header (HMAC verification)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORKSPACE -->
+  <div class="section" id="workspace">
+    <div class="section-title">👥 Workspace <span class="tag-badge" style="background:rgba(74,222,128,.15);color:var(--green)">Team Plan only</span></div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span><span class="path">/api/workspace</span>
+        <span class="summary">รายการ workspaces ที่เป็นสมาชิก</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4>
+        <pre>{ "owned": [{ "id", "name", "slug", "_count": { "members": 3, "files": 8 } }],
+  "member": [{ "id", "name", "role": "MEMBER" }] }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span><span class="path">/api/workspace</span>
+        <span class="summary">สร้าง Workspace ใหม่</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span><span class="badge team">👥 Team</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Request Body</h4>
+        <pre>{ "name": "บริษัท ABC", "slug": "abc-co", "description": "..." }</pre>
+        <h4>Errors</h4>
+        <div class="error-list"><span class="error-chip">403 PLAN_REQUIRED</span><span class="error-chip">400 INVALID_SLUG</span><span class="error-chip">409 SLUG_TAKEN</span></div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span><span class="path">/api/workspace/[id]/members</span>
+        <span class="summary">รายชื่อสมาชิก workspace</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4>
+        <pre>{ "members": [{ "id", "email", "role": "OWNER", "status": "ACTIVE", "user": {...} }] }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span><span class="path">/api/workspace/[id]/members</span>
+        <span class="summary">เชิญสมาชิกใหม่ (ส่ง invite email อัตโนมัติ)</span>
+        <div class="badges"><span class="badge auth">🔒 Owner/Admin</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Request Body</h4>
+        <pre>{ "email": "member@example.com", "role": "MEMBER" | "ADMIN" }</pre>
+        <h4>Errors</h4>
+        <div class="error-list"><span class="error-chip">422 SEAT_LIMIT (max 5)</span><span class="error-chip">409 ALREADY_MEMBER</span></div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span><span class="path">/api/workspace/join</span>
+        <span class="summary">รับ invite token → เข้าร่วม workspace</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Request Body</h4>
+        <pre>{ "token": "64hex-invite-token" }</pre>
+        <h4>Response 200</h4>
+        <pre>{ "workspaceId": "cuid", "workspaceName": "บริษัท ABC" }</pre>
+        <h4>Errors</h4>
+        <div class="error-list"><span class="error-chip">404 NOT_FOUND</span><span class="error-chip">409 CONFLICT</span><span class="error-chip">403 email ไม่ตรง</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="section" id="settings">
+    <div class="section-title">🔔 Settings — Notifications</div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span><span class="path">/api/settings/notifications</span>
+        <span class="summary">ดูการตั้งค่าการแจ้งเตือน</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4>
+        <pre>{ "lineNotifyToken": "***" | null, "emailAlerts": true }</pre>
+        <div class="note">Token จริงไม่แสดง — แสดงเป็น "***" ถ้ามีค่า</div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method PATCH">PATCH</span><span class="path">/api/settings/notifications</span>
+        <span class="summary">บันทึก LINE Notify Token</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Request Body</h4>
+        <pre>{ "lineNotifyToken": "abc123..." | null }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span><span class="path">/api/settings/notifications/test-line</span>
+        <span class="summary">ส่ง test message ผ่าน LINE Notify</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <div class="note">Response: 200 { ok: true } หรือ 502 ถ้า LINE API ล้มเหลว</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEVELOPER -->
+  <div class="section" id="developer">
+    <div class="section-title">🔑 Developer — API Keys</div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span><span class="path">/api/developer/keys</span>
+        <span class="summary">รายการ API keys (ไม่แสดง plaintext)</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Response 200</h4>
+        <pre>{ "keys": [{ "id", "name": "My Integration", "keyPrefix": "ok_live_a1b2c3d4",
+  "scopes": ["read:files"], "lastUsedAt": null, "createdAt": "..." }] }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span><span class="path">/api/developer/keys</span>
+        <span class="summary">สร้าง API key ใหม่ (max 5 keys)</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span><span class="badge pro">⭐ Pro</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Request Body</h4>
+        <table class="params-table"><tr><th>Field</th><th>Type</th><th>Required</th></tr>
+          <tr><td>name</td><td>string</td><td><span class="required">✓</span> 1–80 chars</td></tr>
+          <tr><td>scopes</td><td>string[]</td><td><span class="required">✓</span> read:files / read:reports / read:alerts / write:files</td></tr>
+        </table>
+        <h4>Response 200</h4>
+        <pre>{ "key": { ..., "plaintext": "ok_live_a1b2c3d4xxxx..." },
+  "warning": "บันทึก key นี้ไว้ทันที — จะไม่แสดงอีกครั้ง" }</pre>
+        <div class="note">plaintext แสดงเพียงครั้งเดียว — SHA-256 hash เก็บใน DB เท่านั้น</div>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method DELETE">DELETE</span><span class="path">/api/developer/keys/[id]</span>
+        <span class="summary">Revoke API key (soft delete)</span>
+        <div class="badges"><span class="badge auth">🔒 Auth</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body"><h4>Response 200</h4><pre>{ "ok": true }</pre></div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="section" id="admin">
+    <div class="section-title">⚙️ Admin <span class="tag-badge" style="background:rgba(248,113,113,.15);color:var(--red)">ADMIN role only</span></div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span><span class="path">/api/admin/civic-data</span>
+        <span class="summary">รายการ CivicDataVersion ทั้งหมด</span>
+        <div class="badges"><span class="badge admin">🛡 Admin</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body"><h4>Response 200</h4><pre>{ "versions": [...] }</pre></div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method POST">POST</span><span class="path">/api/admin/civic-data/upload</span>
+        <span class="summary">อัปโหลด budget dataset ใหม่ (HTML/XLSX/CSV ≤150MB)</span>
+        <div class="badges"><span class="badge admin">🛡 Admin</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Request (multipart/form-data)</h4>
+        <table class="params-table"><tr><th>Field</th><th>Required</th><th>Note</th></tr>
+          <tr><td>file</td><td><span class="required">✓</span></td><td>ไฟล์งบประมาณ ≤150MB</td></tr>
+          <tr><td>fiscal_year</td><td><span class="required">✓</span></td><td>ปีงบประมาณ BE เช่น 2568</td></tr>
+          <tr><td>mode</td><td><span class="required">✓</span></td><td>add / replace / delete</td></tr>
+          <tr><td>notes</td><td>—</td><td>หมายเหตุ</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method PATCH">PATCH</span><span class="path">/api/admin/civic-data/[id]</span>
+        <span class="summary">แก้ไข notes ของ version</span>
+        <div class="badges"><span class="badge admin">🛡 Admin</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body"><h4>Request Body</h4><pre>{ "notes": "..." }</pre></div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method DELETE">DELETE</span><span class="path">/api/admin/civic-data/[id]</span>
+        <span class="summary">ลบ dataset version (ลบ DB rows + JSON + invalidate cache)</span>
+        <div class="badges"><span class="badge admin">🛡 Admin</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body"><h4>Response 200</h4><pre>{ "ok": true }</pre></div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method GET">GET</span><span class="path">/api/admin/comments?status=PENDING_REVIEW&page=1</span>
+        <span class="summary">รายการ comments สำหรับ moderation queue</span>
+        <div class="badges"><span class="badge admin">🛡 Admin</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Query Params</h4>
+        <pre>status: PENDING_REVIEW | VISIBLE | REJECTED | ALL</pre>
+        <h4>Response 200</h4>
+        <pre>{ "total": 42, "pending": 12, "page": 1,
+  "comments": [{ "id", "projectId", "body", "status", "authorName", "isGuest" }] }</pre>
+      </div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header" onclick="toggle(this)">
+        <span class="method PATCH">PATCH</span><span class="path">/api/admin/comments/[id]</span>
+        <span class="summary">อนุมัติ หรือ ปฏิเสธ comment</span>
+        <div class="badges"><span class="badge admin">🛡 Admin</span></div>
+        <span class="chevron">▶</span>
+      </div>
+      <div class="endpoint-body">
+        <h4>Request Body</h4>
+        <pre>{ "action": "approve" | "reject" }</pre>
+        <h4>Response 200</h4>
+        <pre>{ "comment": { "id", "status": "VISIBLE" | "REJECTED" } }</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLANS -->
+  <div class="section" id="plans">
+    <div class="section-title">📋 Plan Gating Summary</div>
+    <table class="plan-table">
+      <tr><th>Feature</th><th>FREE</th><th>PRO ฿299/mo</th><th>TEAM ฿799/mo</th></tr>
+      <tr><td>Civic Layer (ทั้งหมด)</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+      <tr><td>File upload</td><td>3/เดือน</td><td>Unlimited</td><td>Unlimited</td></tr>
+      <tr><td>Leak detection</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+      <tr><td>Cash flow forecast</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+      <tr><td>Analytics Tier 3–4</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+      <tr><td>PDF export</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+      <tr><td>API keys (max 5)</td><td class="cross">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+      <tr><td>Workspace</td><td class="cross">—</td><td class="cross">—</td><td class="check">✓</td></tr>
+    </table>
+  </div>
+
+</div>
+
+<script>
+function toggle(header) {
+  header.closest('.endpoint').classList.toggle('open');
+}
+function scrollTo(id) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

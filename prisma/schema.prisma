@@ -1,0 +1,721 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")   // pooled — used by the app at runtime
+  directUrl = env("DIRECT_URL")     // direct — used only by prisma db push / migrate
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  MEMBER
+  ADMIN
+}
+
+enum SubscriptionPlan {
+  FREE
+  PRO
+  TEAM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  TRIAL
+  PAST_DUE
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
+enum FileSourceFormat {
+  EXCEL_TEMPLATE
+  BANK_SCB
+  BANK_KBANK
+  BANK_BBL
+  PEAK
+  FLOWACCOUNT
+  CUSTOM
+}
+
+enum FileStatus {
+  UPLOADING
+  PROCESSING
+  DONE
+  ERROR
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum LeakFlag {
+  NONE
+  SPIKE
+  DUPLICATE
+  OUTLIER
+  CREEP
+}
+
+enum Severity {
+  CRITICAL
+  WARNING
+  INFO
+}
+
+enum AlertType {
+  LOW_RUNWAY
+  OVER_BUDGET
+  NEW_LEAK
+  DUPLICATE_PAYMENT
+  SUBSCRIPTION_EXPIRING
+}
+
+enum InsightType {
+  category_spike
+  new_vendor_surge
+  seasonal_drop
+}
+
+enum ForecastMethod {
+  WMA_SEASONAL
+}
+
+enum RecommendationBasedOn {
+  forecast
+  leak
+  diagnostic
+}
+
+enum RecommendationPriority {
+  high
+  medium
+  low
+}
+
+enum RecommendationStatus {
+  PENDING
+  DISMISSED
+  APPLIED
+}
+
+enum ProjectRatingVote {
+  too_high
+  appropriate
+  too_low
+}
+
+enum CivicDataStatus {
+  PROCESSING
+  ACTIVE
+  REPLACED
+  FAILED
+  DELETED
+}
+
+enum CivicSourceFormat {
+  xlsx
+  csv
+  html
+}
+
+enum AdminAction {
+  CIVIC_UPLOAD
+  CIVIC_DELETE
+  CIVIC_NOTES_EDIT
+}
+
+// ─── Auth ───────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  passwordHash  String?
+  emailVerified DateTime?
+  googleId      String?   @unique
+  role          UserRole  @default(MEMBER)
+  avatarUrl     String?
+  organization  String?
+  banned           Boolean   @default(false)
+  lineNotifyToken  String?   // LINE Notify personal access token (user-supplied)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  subscription         Subscription?
+  files                File[]
+  transactions         Transaction[]
+  alerts               Alert[]
+  categoryRules        CategoryRule[]
+  sessions             AuthSession[]
+  budgets              Budget[]
+  savedSearches        SavedSearch[]
+  projectRatings       ProjectRating[]
+  paymentRecords       PaymentRecord[]
+  monthlySummaries     MonthlyFinancialSummary[]
+  diagnosticInsights   DiagnosticInsight[]
+  forecastSnapshots    ForecastSnapshot[]
+  recommendations      Recommendation[]
+  adminLogs            AdminLog[]
+  // Phase 2 — workspace
+  ownedWorkspaces      Workspace[]              @relation("WorkspaceOwner")
+  workspaceMemberships WorkspaceMember[]        @relation("WorkspaceMemberships")
+  workspaceShares      WorkspaceFile[]          @relation("WorkspaceShares")
+  // Phase 2 — civic comments
+  projectComments      ProjectComment[]         @relation("ProjectComments")
+  // Phase 2 — API access
+  apiKeys              ApiKey[]                 @relation("UserApiKeys")
+
+  @@index([role])
+}
+
+model AuthSession {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String   @unique
+  userAgent  String?
+  ipAddress  String?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+// ─── Subscription ────────────────────────────────────────────────────────────
+
+model Subscription {
+  id                      String             @id @default(cuid())
+  userId                  String             @unique
+  user                    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                    SubscriptionPlan   @default(FREE)
+  status                  SubscriptionStatus @default(ACTIVE)
+  billingCycle            BillingCycle?
+  currentPeriodStart      DateTime?
+  currentPeriodEnd        DateTime?
+  cancelAtPeriodEnd       Boolean            @default(false)
+  trialEndsAt             DateTime?
+  stripeCustomerId        String?            @unique
+  stripeSubscriptionId    String?            @unique
+  stripeCheckoutSessionId String?
+  isManuallyGranted       Boolean            @default(false)
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+
+  paymentRecords PaymentRecord[]
+}
+
+model PaymentRecord {
+  id               String        @id @default(cuid())
+  userId           String
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionId   String?
+  subscription     Subscription? @relation(fields: [subscriptionId], references: [id])
+  /// Amount in smallest currency unit (satang / cents) — integer avoids float rounding
+  amount           Int
+  currency         String        @default("thb")
+  /// "paid" | "failed" | "refunded"
+  status           String
+  description      String?
+  stripeInvoiceId  String?       @unique
+  paidAt           DateTime?
+  createdAt        DateTime      @default(now())
+
+  @@index([userId])
+}
+
+// ─── Business Layer — Files ──────────────────────────────────────────────────
+
+model File {
+  id               String          @id @default(cuid())
+  userId           String
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  filename         String
+  fileSize         Int
+  fileType         String
+  sourceFormat     FileSourceFormat
+  status           FileStatus      @default(UPLOADING)
+  errorMessage     String?
+  storageKey       String
+  /// SHA-256 of the raw file bytes — detects duplicate uploads before re-parsing
+  fileHash         String?
+  periodStart      DateTime?
+  periodEnd        DateTime?
+  transactionCount Int?
+  /// Stored as Decimal(15,2) — exact arithmetic, no IEEE-754 rounding
+  totalIncome      Decimal?        @db.Decimal(15, 2)
+  totalExpense     Decimal?        @db.Decimal(15, 2)
+  uploadedAt       DateTime        @default(now())
+  processedAt      DateTime?
+
+  transactions     Transaction[]
+  alerts           Alert[]
+  workspaceShares  WorkspaceFile[]   // Phase 2
+
+  @@index([userId])
+  @@index([status])
+  @@index([userId, fileHash])
+}
+
+model Transaction {
+  id              String          @id @default(cuid())
+  fileId          String
+  file            File            @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date            DateTime
+  description     String
+  category        String
+  /// Stored as Decimal(15,2) — exact arithmetic, no IEEE-754 rounding
+  amount          Decimal         @db.Decimal(15, 2)
+  transactionType TransactionType
+  /// Deterministic hash for exact-duplicate detection across re-uploads
+  rowHash         String?
+  /// Softer hash (without amount/category) for "same tx, different amount" detection
+  softKey         String?
+  autoCategorized Boolean         @default(true)
+  userOverrode    Boolean         @default(false)
+  leakFlag        LeakFlag        @default(NONE)
+  leakSeverity    Severity?
+  leakReason      String?
+  /// Arbitrary extra context stored as JSONB — queryable, no manual JSON.parse needed
+  metadata        Json?           @db.JsonB
+  /// Fix #6: Pre-normalization raw values from the parser output.
+  /// Preserves the original row before auto-categorization, amount parsing,
+  /// and date normalization so Phase 2 ML models can retrain on the true source
+  /// distribution without needing to re-parse all historical files.
+  ///
+  /// Shape (flexible — depends on source format):
+  ///   EXCEL_TEMPLATE : { rawDate: "01/03/67", rawAmount: "60,000.00", rawDesc: "=เงินเดือน..." }
+  ///   BANK_SCB       : { txCode: "T001", channel: "ATM", balance: "120000.00" }
+  ///   PEAK           : { accountCode: "5100", debit: "60000", credit: "0" }
+  ///
+  /// NULL for rows imported before this column was added (pre-migration rows).
+  /// Never query this field in hot paths — use the normalized columns above.
+  rawValues       Json?           @db.JsonB
+
+  alerts Alert[]
+
+  @@index([fileId])
+  @@index([userId, date])
+  @@index([category])
+  @@index([leakFlag])
+  @@index([userId, rowHash])
+  @@index([userId, softKey])
+}
+
+model CategoryRule {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  keyword    String
+  category   String
+  priority   Int      @default(0)
+  usageCount Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([userId, keyword])
+}
+
+// ─── Data Analytics Module — 4-tier framework (Phase 1/2) ────────────────────
+
+model MonthlyFinancialSummary {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// "2026-06"
+  month        String
+  category     String
+  totalIncome  Decimal  @db.Decimal(15, 2)
+  totalExpense Decimal  @db.Decimal(15, 2)
+  txCount      Int
+  computedAt   DateTime @default(now())
+
+  @@unique([userId, month, category])
+  @@index([userId, month])
+}
+
+model DiagnosticInsight {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  month        String
+  category     String
+  insightType  InsightType
+  /// Thai-language explanation shown to the user
+  summary      String
+  /// JSONB array of Transaction.id that are the root cause — queryable without JSON.parse
+  relatedTxIds Json        @db.JsonB
+  createdAt    DateTime    @default(now())
+
+  @@index([userId, month])
+}
+
+model ForecastSnapshot {
+  id               String         @id @default(cuid())
+  userId           String
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  forecastMonth    String
+  method           ForecastMethod @default(WMA_SEASONAL)
+  predictedNet     Decimal        @db.Decimal(15, 2)
+  confidenceLow    Decimal        @db.Decimal(15, 2)
+  confidenceHigh   Decimal        @db.Decimal(15, 2)
+  cashRunwayMonths Decimal?       @db.Decimal(6, 2)
+  /// JSONB: trailing months + weights + seasonal indices — for "วิธีคิด" disclosure
+  inputWindow      Json           @db.JsonB
+  /// Optional what-if delta, e.g. { "revenueChangePct": -10 }
+  whatIf           Json?          @db.JsonB
+  generatedAt      DateTime       @default(now())
+
+  @@index([userId, forecastMonth])
+}
+
+model Recommendation {
+  id        String                 @id @default(cuid())
+  userId    String
+  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  basedOn   RecommendationBasedOn
+  basedOnId String
+  /// Thai-language suggested action
+  action    String
+  priority  RecommendationPriority
+  status    RecommendationStatus   @default(PENDING)
+  createdAt DateTime               @default(now())
+
+  @@index([userId, status])
+}
+
+// ─── Civic participation — ratings ───────────────────────────────────────────
+
+model ProjectRating {
+  id        String            @id @default(cuid())
+  projectId String
+  userId    String?
+  user      User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  vote      ProjectRatingVote
+  ipHash    String?
+  createdAt DateTime          @default(now())
+
+  @@unique([projectId, userId])
+  @@unique([projectId, ipHash])
+  @@index([projectId])
+}
+
+// ─── Saved searches ───────────────────────────────────────────────────────────
+
+model SavedSearch {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label       String
+  /// JSONB-serialized SearchFilters — queryable, no JSON.parse needed on read
+  filters     Json     @db.JsonB
+  resultCount Int?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ─── Budget targets ───────────────────────────────────────────────────────────
+
+model Budget {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  String
+  amount    Decimal  @db.Decimal(15, 2)
+  /// "2025-06" — YYYY-MM, null = applies to all months (standing budget)
+  month     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, category, month])
+  @@index([userId])
+}
+
+// ─── Alerts ──────────────────────────────────────────────────────────────────
+
+model Alert {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileId        String?
+  file          File?        @relation(fields: [fileId], references: [id])
+  transactionId String?
+  transaction   Transaction? @relation(fields: [transactionId], references: [id])
+  type          AlertType
+  severity      Severity
+  title         String
+  message       String
+  /// JSONB extra context — queryable without JSON.parse
+  context       Json?        @db.JsonB
+  read          Boolean      @default(false)
+  dismissed     Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  readAt        DateTime?
+
+  @@index([userId, read])
+  @@index([createdAt])
+}
+
+// ─── Civic data admin tracking ────────────────────────────────────────────────
+
+model CivicDataVersion {
+  id                String            @id @default(cuid())
+  fiscalYear        String
+  version           Int
+  uploadedBy        String
+  filename          String
+  sourceFormat      CivicSourceFormat @default(xlsx)
+  status            CivicDataStatus   @default(PROCESSING)
+  /// Links to the version this one replaces — full audit trail, nothing hard-deleted
+  replacesVersionId String?
+  replacesVersion   CivicDataVersion?  @relation("VersionHistory", fields: [replacesVersionId], references: [id], onDelete: SetNull)
+  replacedBy        CivicDataVersion[] @relation("VersionHistory")
+  /// Thai-friendly parse/validation error detail (populated when status = FAILED)
+  errorLog          String?
+  ministryCount     Int
+  projectCount      Int
+  redFlagCount      Int
+  isActive          Boolean           @default(true)
+  uploadedAt        DateTime          @default(now())
+  notes             String?
+
+  // Fix #5: Unique constraint prevents two concurrent uploads from both writing
+  // version N for the same fiscal year. Combined with a prisma.$transaction that
+  // reads max(version) and writes the new row atomically, this makes the version
+  // sequence collision-safe. Without this, two simultaneous uploads would both
+  // read "latest = v1" and try to insert v2 — one would succeed and the other
+  // would overwrite or lose data silently.
+  @@unique([fiscalYear, version])
+  @@index([fiscalYear, isActive])
+  @@index([fiscalYear, status])
+  @@index([status])
+}
+
+// ─── Admin audit log ──────────────────────────────────────────────────────────
+// Append-only. Uses a real FK to User so the relation is traversable, but
+// onDelete: SetNull preserves the log even if the admin account is deleted.
+
+model AdminLog {
+  id        String      @id @default(cuid())
+  /// Nullable so audit records survive when an admin account is deleted
+  adminId   String?
+  admin     User?       @relation(fields: [adminId], references: [id], onDelete: SetNull, map: "AdminLog_adminId_fkey")
+  action    AdminAction
+  /// Optional FK to the affected record (CivicDataVersion.id, etc.)
+  targetId  String?
+  /// JSONB extra context — fiscal year, filename, row counts, etc.
+  detail    Json?       @db.JsonB
+  /// First 16 hex chars of SHA-256(client IP) — identifiable enough for abuse investigation
+  ipHash    String?
+  createdAt DateTime    @default(now())
+
+  @@index([adminId])
+  @@index([action, createdAt])
+}
+
+// ─── Civic Layer — raw budget line items ─────────────────────────────────────
+
+model BudgetLineItem {
+  id   String @id @default(cuid())
+
+  refDoc     String
+  refPageNo  Int
+
+  ministry      String
+  strategy      String?
+  motherPlan    String?
+  crossFunc     Boolean @default(false)
+  budgetaryUnit String
+  budgetPlan    String
+
+  output  String?
+  project String?
+
+  categoryLv1 String?
+  categoryLv2 String?
+  categoryLv3 String?
+  categoryLv4 String?
+  categoryLv5 String?
+  categoryLv6 String?
+
+  itemDescription String?
+
+  fiscalYear Int
+  /// Stored as Decimal(15,2) — Thai national budget rows can reach tens of billions
+  amount     Decimal  @db.Decimal(15, 2)
+  obliged    Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([fiscalYear, ministry])
+  @@index([budgetaryUnit, fiscalYear])
+  @@index([refDoc, refPageNo])
+  @@index([project])
+  @@index([output])
+}
+
+// ─── Phase 2: Team Workspace ─────────────────────────────────────────────────
+
+enum WorkspaceMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum WorkspaceMemberStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+/// Shared workspace for Team plan — one owner, up to 5 seats (Team plan limit)
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique  // URL-safe identifier, e.g. "my-company"
+  description String?
+  ownerId     String
+  owner       User     @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  members     WorkspaceMember[]
+  files       WorkspaceFile[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([slug])
+}
+
+/// Workspace member (includes the owner themselves at OWNER role)
+model WorkspaceMember {
+  id          String                  @id @default(cuid())
+  workspaceId String
+  workspace   Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?                   @relation("WorkspaceMemberships", fields: [userId], references: [id])
+  email       String                  // invite target if userId is null
+  role        WorkspaceMemberRole     @default(MEMBER)
+  status      WorkspaceMemberStatus   @default(INVITED)
+  inviteToken String?                 @unique
+  invitedAt   DateTime                @default(now())
+  joinedAt    DateTime?
+  updatedAt   DateTime                @updatedAt
+
+  @@unique([workspaceId, email])
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([inviteToken])
+}
+
+/// A file shared into a workspace (file still owned by uploading user)
+model WorkspaceFile {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  fileId      String
+  file        File      @relation(fields: [fileId], references: [id])
+  sharedById  String
+  sharedBy    User      @relation("WorkspaceShares", fields: [sharedById], references: [id])
+  sharedAt    DateTime  @default(now())
+
+  @@unique([workspaceId, fileId])
+  @@index([workspaceId])
+}
+
+// ─── Phase 2: Civic Comments ──────────────────────────────────────────────────
+
+enum CommentStatus {
+  VISIBLE
+  PENDING_REVIEW
+  REJECTED
+}
+
+/// Public comment on a budget project (requires an account or captcha-free challenge)
+model ProjectComment {
+  id          String        @id @default(cuid())
+  projectId   String        // civic budget project ID (from BudgetProject.id, not a FK)
+  userId      String?
+  user        User?         @relation("ProjectComments", fields: [userId], references: [id])
+  guestName   String?       // display name for guests
+  body        String        @db.Text
+  status      CommentStatus @default(PENDING_REVIEW)
+  moderatedBy String?       // admin userId who approved/rejected
+  moderatedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([projectId, status])
+  @@index([userId])
+  @@index([status])
+}
+
+// ─── Phase 2: API Developer Access ───────────────────────────────────────────
+
+/// Personal API key for developer/integration access.
+/// The `keyHash` stores bcrypt/SHA-256 hash; the plaintext is shown only once
+/// at creation and never stored. `keyPrefix` stores the first 8 chars for
+/// display purposes (e.g. "ok_live_abcd1234...").
+model ApiKey {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation("UserApiKeys", fields: [userId], references: [id], onDelete: Cascade)
+  name        String                        // e.g. "My Integration", "Zapier"
+  keyPrefix   String                        // first 8 chars, for display
+  keyHash     String    @unique             // SHA-256 hex of the full key
+  scopes      String[]                      // e.g. ["read:files", "read:reports"]
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  revoked     Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([keyHash])
+}
+
+// ─── Phase 2: Fiscal Intelligence ────────────────────────────────────────────
+
+/// Thai national macro-fiscal summary per fiscal year (ปีงบประมาณ).
+/// Seeded from data/fiscal-summary.json — NOT a live API call.
+/// Source: สศค./กรมบัญชีกลาง/สบน./สำนักงบประมาณ
+model FiscalYearSummary {
+  id               String   @id @default(cuid())
+  /// ปีงบประมาณ เช่น "2568"
+  fiscalYear       String   @unique
+  /// รายได้รัฐบาล (ล้านบาท)
+  totalRevenue     Decimal  @db.Decimal(15, 2)
+  /// รายจ่ายรัฐบาล / วงเงินงบประมาณ (ล้านบาท)
+  totalExpenditure Decimal  @db.Decimal(15, 2)
+  /// ดุลงบประมาณ = totalRevenue - totalExpenditure (ติดลบ = ขาดดุล)
+  balance          Decimal  @db.Decimal(15, 2)
+  /// หนี้สาธารณะคงค้าง ณ สิ้นปี (ล้านบาท)
+  publicDebt       Decimal  @db.Decimal(15, 2)
+  /// ประมาณ GDP (ปีปฏิทินที่ใกล้เคียง) (ล้านบาท)
+  gdpEstimate      Decimal? @db.Decimal(15, 2)
+  /// หนี้สาธารณะต่อ GDP (%)
+  debtToGdpPct     Decimal? @db.Decimal(6, 2)
+  /// อ้างอิงแหล่งข้อมูล
+  source           String   @default("สำนักงานเศรษฐกิจการคลัง (สศค.)")
+  sourceNotes      String?
+  publishedAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([fiscalYear])
+}
