@@ -2,20 +2,24 @@
 
 ## About this project
 
-A web application that transforms complex budget documents (PDF/Excel) into real-time interactive dashboards. Built as a portfolio project demonstrating full-stack development skills.
+A two-layer web platform: a public Civic Layer for exploring Thai government budgets (no login, free) inspired by WeVis and USASpending.gov, and a paid Business Layer for SME expense analysis. Built as a portfolio project demonstrating full-stack development skills.
 
 **Primary language**: Thai (UI), English (code)
-**Target users**: Thai government agencies (transparency), SMEs (cash flow management)
-**Revenue model**: Freemium (Free + Pro subscription at ฿299/month)
+**Architecture**: Two distinct layers sharing infrastructure but serving different users
+**Revenue model**: Civic Layer = free (marketing funnel), Business Layer = Freemium + Pro ฿299/mo + Team ฿799/mo
+
+> 📚 **This file is the compact index.** Detailed specs live in `docs/` — read the relevant doc before working on that area (saves tokens vs. reading everything). See "Detail docs index" at the bottom.
 
 ## Tech stack
 
 - **Frontend**: Next.js 14 (App Router) + TypeScript + Tailwind CSS + shadcn/ui
-- **Charts**: Recharts
+- **Charts**: Recharts (bar, pie, line) + D3.js (treemap, sunburst) + Leaflet (map view)
 - **Backend**: node.js API Routes + Python microservice (FastAPI) for PDF/Excel parsing
 - **PDF parsing**: pdfplumber (Python)
 - **Excel parsing**: openpyxl + pandas (Python)
-
+- **Database**: SQLite (dev) / PostgreSQL (prod) + Prisma ORM
+- **Cache**: In-memory tree cache for Civic Layer (rebuilt from Postgres at server start — see `docs/analyzer-spec.md` for the dual-storage strategy, do not revert to in-memory-only)
+- **Deploy**: Vercel (frontend) + Railway/Render (Python service)
 
 ## Project structure
 
@@ -24,299 +28,105 @@ ouran_ratsadon/
 ├── CLAUDE.md
 ├── README.md
 ├── apps/
-│   ├── web/                    # Next.js frontend
+│   ├── web/                          # Next.js frontend
 │   │   ├── app/
-│   │   │   ├── (public)/       # Landing, About, Features, Pricing, Contact, Demo
-│   │   │   ├── (auth)/         # Login, Register, Forgot/Reset Password
-│   │   │   ├── (dashboard)/    # Member pages (requires auth)
-│   │   │   │   ├── dashboard/
-│   │   │   │   ├── upload/
-│   │   │   │   ├── files/
-│   │   │   │   ├── report/[id]/
-│   │   │   │   ├── compare/
-│   │   │   │   ├── settings/
-│   │   │   │   └── upgrade/
-│   │   │   └── (admin)/        # Admin panel (requires admin role)
-│   │   │       ├── admin/
-│   │   │       ├── admin/users/
-│   │   │       ├── admin/files/
-│   │   │       ├── admin/subscriptions/
-│   │   │       └── admin/logs/
-│   │   ├── components/
-│   │   │   ├── ui/             # shadcn/ui components
-│   │   │   ├── charts/         # Recharts wrappers
-│   │   │   ├── layout/         # Header, Sidebar, Footer
-│   │   │   └── shared/         # Reusable components
-│   │   ├── hooks/
-│   │   ├── lib/
-│   │   ├── types/
-│   │   └── utils/
-│   └── parser/                 # Python FastAPI microservice
+│   │   │   ├── (public)/             # Landing, About, Pricing, Contact
+│   │   │   ├── (civic)/              # Public budget explorer (no auth)
+│   │   │   ├── (auth)/               # Login, Register, Forgot Password
+│   │   │   ├── (business)/           # SME dashboard (requires auth)
+│   │   │   └── (admin)/              # Admin panel
+│   │   ├── components/               # ui/ civic/ business/ charts/ layout/ shared/
+│   │   ├── hooks/ lib/ types/ utils/
+│   └── parser/                       # Python FastAPI microservice
 │       ├── main.py
-│       ├── parsers/
-│       │   ├── pdf_parser.py
-│       │   └── excel_parser.py
-│       ├── models/
-│       └── utils/
-├── prisma/
-│   └── schema.prisma
-├── docs/
-│   ├── wireframes/
-│   ├── api-spec.md
-│   └── database-schema.md
-└── sample-data/                # Sample budget files for testing
+│       ├── parsers/                  # pdf, excel, bank_statement, accounting_export
+│       ├── analyzers/                # leak_detector, forecaster, categorizer
+│       ├── models/ utils/
+├── prisma/schema.prisma
+├── data/                             # Pre-processed government data: budget-XXXX.json
+├── skills/                           # nextjs-developer, typescript-pro, nodejs-api-developer,
+│                                     # fullstack-architect, code-reviewer, planning-with-files
+│   └── graphify/SKILL.md             # /graphify — codebase → knowledge graph (community detection, HTML viz, JSON)
+├── docs/                             # see "Detail docs index" below
+└── sample-data/                      # Sample SME files for testing
 ```
 
-## User roles
+> Full route list (every page, every layer): `docs/routes-and-pages.md`
 
-There are 4 roles. Always check role before rendering pages or calling APIs.
+## Platform layers and user roles
 
-- **Guest**: Unauthenticated visitor. Can see public pages only.
-- **Member (Free)**: Registered user. Limited to 3 file uploads/month. Basic charts (Bar, Pie). Export CSV only.
-- **Member (Pro)**: Paying subscriber ฿299/month. Unlimited uploads. All charts + drill-down. Anomaly detection. File comparison. PDF export. Priority support.
-- **Admin**: System administrator. Full access to admin panel at /admin. Can manage users, view all files, manage subscriptions, view logs.
+**Civic Layer** (public, no login, free): pre-processed Thai government budget data, treemap/sunburst/map visualizations, advanced search, project detail pages, year-over-year comparison, embed widgets, open data download. Purpose: build brand, SEO traffic, funnel users to Business Layer.
 
-## Routes and pages
+**Business Layer** (login required, paid): user uploads own financial data (Excel template, bank statements, accounting exports), cash flow dashboard, leak detection, cash flow forecasting (WMA + seasonal). Purpose: revenue from SME subscriptions.
 
-### Public (no auth)
-- `/` — Landing page with hero, how-it-works, features, pricing preview, footer
-- `/about` — Mission, team, tech stack, timeline
-- `/features` — All features with Free vs Pro comparison
-- `/pricing` — Plan cards with monthly/yearly toggle and FAQ
-- `/demo` — Interactive demo with sample data (no login needed)
-- `/contact` — Contact form + LINE OA + email
-- `/privacy` — Privacy policy
-- `/terms` — Terms of service
+### User roles
+- **Guest**: Unauthenticated, full Civic Layer access
+- **Member (Free)**: 3 file uploads/month, basic charts, CSV export
+- **Member (Pro)** ฿299/mo: unlimited uploads, leak detection, forecasting, what-if, alerts, PDF export
+- **Member (Team)** ฿799/mo: Pro + 5 seats + shared dashboards + comments + RBAC
+- **Admin**: manages users, subscriptions, logs, Civic Layer dataset uploads
 
-### Auth
-- `/login` — Email/password + Google OAuth
-- `/register` — Form with password strength meter + Google OAuth
-- `/forgot-password` — Email input for reset link
-- `/reset-password` — New password form (token-based)
+## Civic Layer data storage strategy (decided — do not mix patterns)
 
-### Member (auth required)
-- `/dashboard` — Main workspace: stat cards, bar chart, pie chart, line chart, data table with anomaly highlights
-- `/upload` — Drag-and-drop upload zone, file quota bar, processing states
-- `/files` — File history with search, filter, status badges
-- `/report/:id` — Full dashboard for a specific file
-- `/report/:id/overview` — Summary cards + main charts
-- `/report/:id/detail` — Sortable data table
-- `/report/:id/anomalies` — Anomaly list [Pro only]
-- `/report/:id/export` — Export options
-- `/compare` — Side-by-side comparison of 2 files [Pro only]
-- `/settings/profile` — Name, email, avatar
-- `/settings/security` — Password, 2FA
-- `/settings/billing` — Plan info, payment history
-- `/settings/notifications` — Alert preferences
-- `/upgrade` — Upgrade to Pro CTA
+Civic data is **dual-stored**: `data/budget-XXXX.json` is the source of truth → bulk-loaded into Postgres (`BudgetMinistry`/`BudgetDepartment`/`BudgetProject`, indexed) AND used to rebuild an in-memory tree cache. **Rule of thumb**: bounded tree/aggregate reads (`/explore`, drill-down, compare) → cache; filtered/sorted/paginated reads (`/api/civic/search`, `/api/civic/export/*`) → Postgres with indexes. Full pipeline, workflow, and red-flag/leak/forecast rule details: `docs/analyzer-spec.md`.
 
-### Admin (admin role required)
-- `/admin` — System overview: total users, pro members, uploads today, monthly revenue, revenue chart, recent users table
-- `/admin/users` — User list with search, filter, role change, ban
-- `/admin/users/:id` — User detail + usage history
-- `/admin/files` — All uploaded files in system
-- `/admin/subscriptions` — Active subscriptions management
-- `/admin/logs` — System logs and errors
+## Priority matrix — Phase 0 focus (do not start Business Layer until Civic 0a is demo-ready)
 
-## Core features — MVP (Phase 0)
+**0a — Civic Layer (Weeks 1-2, ship first)**: `/explore` (Treemap + year selector + drill-down), `/search` (filters + table), `/project/[id]` (5-yr history), red flags Rules 1 & 2 only, CSV download, share/OG.
 
-### File upload and processing
-- Accept PDF (text-based only, no OCR) and Excel (.xlsx, .xls)
-- Drag-and-drop + file picker
-- Validate file type and size (max 50MB)
-- Show progress bar during processing
-- Free plan: 3 files/month limit with quota bar
-- Extract budget data into structured JSON with categories, amounts, dates
+**0b — Business Layer thin slice (Weeks 3-4)**: email/password auth only (no Google OAuth yet), Excel-template upload only, auto-categorize, dashboard (cash flow + category breakdown only), leak detection = **Outlier rule only**, CSV export, Pro features via manual `isManuallyGranted` flag (no real payment flow).
 
-### Dashboard and visualization
-- Summary stat cards: total budget, spent, remaining, anomaly count
-- Bar chart: budget by category
-- Pie chart: spending proportions
-- Line chart: trend over time (if data supports it)
-- Data table with sorting, pagination, search
-- Filter by category and date range
-- Drill-down on chart click [Pro]
+Full phase breakdown (0/1/2, what's deferred and why): `docs/roadmap.md`
 
-### Anomaly detection [Pro]
-- Flag items exceeding 2 standard deviations
-- Flag unusual increases vs previous period
-- Flag duplicate entries
-- Highlight with red/yellow in table and charts
-- Separate anomaly report page
+## Security implementation status (as of 2026-06-10 — do not regress)
 
-### Export
-- CSV export (all users)
-- PDF report with charts [Pro]
-- Print-friendly view
+These protections are live. Do not remove or reorder them:
 
-### Subscription
-- Pricing page with Free vs Pro comparison
-- Payment gateway integration
-- Subscription management (upgrade, cancel)
-- Payment history
-- Renewal reminders
-- 14-day free trial (no credit card required)
+- **Edge Rate Limiting** is Step 1 in `apps/web/middleware.ts` — runs before JWT decode and any DB query. Tiers: upload 5/min, auth 10/min, api 60/min. Any refactor of middleware must keep rate limiting first.
+- **File sanitization** lives in `apps/web/lib/file-sanitizer.ts` — `sanitizeStringField()` (CSV injection) and `containsMacros()` (XLSX macro/VBA detection). Both are called in the upload route before DB insert. Do not remove these calls.
+- **Pre-upload validation** (`Content-Length` + extension whitelist) runs before `file.arrayBuffer()` in the upload route — prevents memory exhaustion from large/invalid files.
+- **Orphan cleanup cron** at `GET /api/internal/cleanup-orphans` (protected by `CRON_SECRET` env var). Recommended Vercel schedule `*/30 * * * *`. See `apps/web/lib/orphan-cleaner.ts`.
+- **Version race condition** on `CivicDataVersion` is prevented by `@@unique([fiscalYear, version])` (schema backstop) + `prisma.$transaction` wrapping in the admin upload route.
+- **`rawValues Json?`** on the `Transaction` model preserves pre-normalization row data for Phase 2 ML — do not strip this field during any future Transaction refactor.
 
-### Admin panel
-- System stats dashboard
-- User management (search, view, ban, change role)
-- File management
-- Subscription management
-- System logs
+## Coding conventions (summary — full list incl. Python: `docs/security.md`)
 
-## Data schema (expected JSON from parser)
-
-```json
-{
-  "metadata": {
-    "filename": "string",
-    "file_type": "pdf | xlsx",
-    "fiscal_year": "string",
-    "organization": "string",
-    "parsed_at": "ISO 8601 datetime",
-    "total_items": "number"
-  },
-  "summary": {
-    "total_budget": "number",
-    "total_spent": "number",
-    "total_remaining": "number",
-    "categories": [
-      {
-        "name": "string (e.g. บุคลากร, ดำเนินงาน, ครุภัณฑ์, วัสดุ)",
-        "budget": "number",
-        "spent": "number",
-        "percentage": "number"
-      }
-    ]
-  },
-  "items": [
-    {
-      "id": "string",
-      "description": "string",
-      "category": "string",
-      "amount": "number",
-      "date": "string | null",
-      "anomaly_flag": "none | warning | critical",
-      "anomaly_reason": "string | null"
-    }
-  ]
-}
-```
-
-## Coding conventions
-
-- **TypeScript**: Strict mode, no `any` types. Use interfaces for data shapes, types for unions.
-- **Components**: Functional components only. Use custom hooks for shared logic. One component per file.
-- **Naming**: PascalCase for components, camelCase for functions/variables, UPPER_SNAKE for constants, kebab-case for files/folders.
-- **Styling**: Tailwind utility classes. Use shadcn/ui for form controls, dialogs, toasts. No inline style objects.
-- **State**: React state (useState, useReducer) for local state. React Context for auth/theme. No Redux.
-- **API calls**: Use fetch with proper error handling. Create typed API client functions in `/lib/api.ts`.
-- **Error handling**: Always show user-friendly Thai error messages. Use toast notifications for actions. Use error boundaries for pages.
-- **Commits**: Conventional commits — `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`. Commit at least 1-2 times per day.
-- **Branching**: Feature branches from `main`. Branch name: `feat/feature-name`, `fix/bug-name`.
-- **Comments**: Comment complex logic only. JSDoc for exported functions.
-- **Python (parser)**: Use type hints. Follow PEP 8. Use pydantic for validation. Async endpoints with FastAPI.
-
-## Design system
-
-- **Primary color**: Purple (#7F77DD / #534AB7 for darker)
-- **Success**: Green (#1D9E75)
-- **Warning**: Amber (#BA7517 / #EF9F27)
-- **Error**: Red (#E24B4A / #A32D2D)
-- **Backgrounds**: Use shadcn/ui defaults (light/dark mode support)
-- **Border radius**: `rounded-md` for inputs, `rounded-lg` for cards
-- **Fonts**: System font stack (Tailwind default)
-- **Icons**: Lucide React icons (comes with shadcn/ui)
-- **Dark mode**: Support via Tailwind `dark:` classes
-- **Responsive**: Mobile-first. Breakpoints: sm (640), md (768), lg (1024)
-- **Sidebar**: 200px fixed width on desktop, collapsible on mobile
-- **Language**: All UI text in Thai. Code and variable names in English.
-
-## API endpoints
-
-### Auth
-- `POST /api/auth/register` — Register with email/password
-- `POST /api/auth/login` — Login, returns JWT
-- `POST /api/auth/logout` — Invalidate session
-- `POST /api/auth/forgot-password` — Send reset email
-- `POST /api/auth/reset-password` — Reset with token
-- `GET /api/auth/me` — Get current user
-
-### Files
-- `POST /api/files/upload` — Upload PDF/Excel, triggers parsing
-- `GET /api/files` — List user's files (with pagination, filter)
-- `GET /api/files/:id` — Get file metadata + parsed data
-- `DELETE /api/files/:id` — Delete file and associated data
-
-### Budget / Report
-- `GET /api/budget/:fileId` — Get full parsed budget data
-- `GET /api/budget/:fileId/summary` — Get summary only
-- `GET /api/budget/:fileId/anomalies` — Get anomaly list [Pro]
-- `GET /api/budget/:fileId/export/csv` — Export as CSV
-- `GET /api/budget/:fileId/export/pdf` — Export as PDF [Pro]
-
-### Compare [Pro]
-- `POST /api/compare` — Compare 2 files, body: { fileId1, fileId2 }
-
-### Subscription
-- `GET /api/subscription` — Get current plan
-- `POST /api/subscription/checkout` — Create checkout session
-- `POST /api/subscription/cancel` — Cancel subscription
-- `GET /api/subscription/history` — Payment history
-
-### Admin
-- `GET /api/admin/stats` — System overview stats
-- `GET /api/admin/users` — List all users (with search, pagination)
-- `GET /api/admin/users/:id` — User detail
-- `PATCH /api/admin/users/:id` — Update user (role, ban)
-- `GET /api/admin/files` — All files in system
-- `GET /api/admin/subscriptions` — All active subscriptions
-- `GET /api/admin/logs` — System logs
-
-### Parser (Python microservice)
-- `POST /parse/pdf` — Upload PDF, returns structured JSON
-- `POST /parse/excel` — Upload Excel, returns structured JSON
-- `GET /parse/health` — Health check
-
-## Priority matrix
-
-### P0 — Must have (Week 1-2)
-- File upload (PDF + Excel)
-- Data extraction to JSON
-- Dashboard with bar chart, pie chart, stat cards
-- Data table with sorting
-- Basic filter/search
-- Auth (register, login, logout)
-- Deploy to production
-
-### P1 — Should have (Week 3)
-- Anomaly detection
-- Responsive design
-- Export CSV
-- Line chart
-- File history
-- Settings page
-- Google OAuth
-
-### P2 — Nice to have (Week 4)
-- File comparison [Pro]
-- PDF export [Pro]
-- Dark mode
-- Admin panel
-- Demo video
-- Payment integration
-
-## Sample data
-
-Use 2-3 sample Thai government budget files for development:
-- Source: data.go.th, กรมบัญชีกลาง, สำนักงบประมาณ
-- Focus on text-based PDFs (not scanned)
-- Expected categories: บุคลากร, ดำเนินงาน, ลงทุน, ครุภัณฑ์, วัสดุ, ที่ดินและสิ่งก่อสร้าง
+- TypeScript strict, no `any`. Functional components, one per file. PascalCase components / camelCase vars / kebab-case files.
+- Tailwind + shadcn/ui only, no inline styles. Server Components for static Civic data, Client Components for interactive filters.
+- Conventional commits (`feat:`, `fix:`, etc.), feature branches `feat/...` / `fix/...`.
+- All UI text in Thai, code/variables in English. User-friendly Thai error messages.
 
 ## Important notes
 
-- This is a portfolio project, not a production SaaS. Focus on clean code and good UX over handling every edge case.
-- PDF parsing is the riskiest part. If it doesn't work within 3 days, fall back to Excel + JSON only.
-- Keep README excellent: hero screenshot, live demo link, tech stack, architecture diagram, features, quick start guide, lessons learned section.
-- Commit history matters for portfolio — commit often with clear messages.
-- All Thai government budget data is public domain; no copyright concerns.
+- Portfolio project, not production SaaS — focus on clean code, good UX, and a polished Civic Layer demo (the part recruiters notice).
+- Civic Layer is the public face — shareable, embeddable, SEO-friendly, `<meta og:image>` per project.
+- PDF parsing is offline/team-only for Civic Layer (not a runtime concern); Business Layer Phase 0 only accepts the controlled Excel template.
+- Forecasting is NOT AI/ML — always disclose it's a weighted moving average.
+- Commit often with clear messages; cite data source on every Civic page (public domain data).
+- README must include: hero screenshot of Civic Layer treemap, live demo link, tech stack, architecture diagram, two-layer concept explanation, lessons learned.
+
+## Skills
+
+- **graphify** (`skills/graphify/SKILL.md`) — turn any folder of code, docs, PDFs, or images into a queryable knowledge graph. Trigger: `/graphify`
+  When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` before doing anything else.
+  Requires Python: `pip install graphifyy --break-system-packages`
+  Example: `/graphify apps/web` → interactive HTML graph + Obsidian vault + GRAPH_REPORT.md in `apps/web/graphify-out/`
+
+## Detail docs index
+
+Read the relevant doc before working in that area — keeps context lean while still giving the full picture:
+
+- `docs/project-brief.md` — business context, market analysis, pivot rationale, revenue model & unit economics
+- `docs/business-logic-v2.md` — strategic feature breakdown, conversion funnel, v1→v2 comparison, validation checklist (Phase 0 scope here is synced with this file's Priority matrix)
+- `docs/analyzer-spec.md` — Civic data pipeline, dual-storage strategy detail, red flag rules (1-4 incl. fallbacks), leak detection rules, forecast formulas (WMA + seasonal + cash runway + what-if)
+- `docs/database-schema.md` — full Prisma/SQL schema (all tables, enums, relations, indexes, migration phasing), JSON data shapes (BudgetData, SMEFinancialData)
+- `docs/api-spec.md` — every endpoint with request/response shapes (Civic, Auth, Business, Subscription, Admin, Parser microservice)
+- `docs/routes-and-pages.md` — every page/route across all layers
+- `docs/feature-specs.md` — detailed UI/behavior spec per feature (explorer, search, project detail, upload, dashboard, leak detection, forecasting, alerts)
+- `docs/analytics-module-spec.md` — Business Layer 4-tier analytics blueprint (Descriptive/Diagnostic/Predictive/Prescriptive): architecture, schema, API design, phased plan — Predictive tier MUST stay WMA + Seasonal Index per the forecasting disclosure rule, never framed as ML
+- `docs/fiscal-intelligence-spec.md` — Phase 2 Civic Layer expansion: macro fiscal overview (revenue/expenditure/balance/public debt), recipient/contractor red flags, company financial snapshots, TradingView-inspired interactive trend charts (`lightweight-charts`) — flags new data-sourcing dependencies and recommended build order
+- `docs/design-system.md` — colors, spacing, typography, dark mode, Civic Layer component specifics (treemap, filter panel, breadcrumb, project detail layout)
+- `docs/security.md` — input validation, file upload/injection defense, auth/authorization, rate limiting, secrets — plus full coding conventions
+- `docs/sample-data.md` — Civic data sources, Excel template columns, sample SME file plan
+- `docs/roadmap.md` — full Phase 0/1/2 breakdown with rationale for what's deferred and why
+- `docs/dev-roadmap-2026-06-08.md` — original gap-analysis snapshot + dev table (status notes superseded by `roadmap.md`)

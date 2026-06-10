@@ -1,0 +1,2219 @@
+{
+  "fiscal_year": "2568",
+  "total_budget": 3752700000000,
+  "metadata": {
+    "source": "พ.ร.บ. งบประมาณรายจ่ายประจำปีงบประมาณ พ.ศ. 2568",
+    "parsed_at": "2025-01-15T00:00:00Z",
+    "rules_version": "v1.0",
+    "enriched": true,
+    "enriched_version": "1.1"
+  },
+  "ministries": [
+    {
+      "id": "moe",
+      "name": "กระทรวงศึกษาธิการ",
+      "budget": 511800000000,
+      "color_category": "purple",
+      "departments": [
+        {
+          "id": "moe-001",
+          "name": "สำนักงานคณะกรรมการการศึกษาขั้นพื้นฐาน",
+          "budget": 298200000000,
+          "projects": [
+            {
+              "id": "B68-MOE-001-001",
+              "name": "เงินเดือนและค่าจ้างบุคลากรทางการศึกษา",
+              "amount": 198000000000,
+              "previous_amount": 192000000000,
+              "change_pct": 3.1,
+              "budget_type": "personnel",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านการพัฒนาและเสริมสร้างศักยภาพทรัพยากรมนุษย์",
+              "flags": [
+                {
+                  "rule": "statistical_outlier",
+                  "severity": "warning",
+                  "label": "มูลค่าสูงผิดปกติ",
+                  "description": "สูงกว่าค่าเฉลี่ยหมวดเดียวกัน (฿40145.5M) ถึง 4.9 เท่า (3.7 SD)",
+                  "statistical_context": {
+                    "previous_avg_5yr": 40145454545.454544,
+                    "std_deviations": 3.6836368739605216,
+                    "category_avg_multiple": 4.932065217391305
+                  }
+                }
+              ],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 178000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 182000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 186000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 192000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 198000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOE-001-002",
+              "name": "ค่าใช้จ่ายในการดำเนินงานด้านการศึกษาขั้นพื้นฐาน",
+              "amount": 62000000000,
+              "previous_amount": 60000000000,
+              "change_pct": 3.3,
+              "budget_type": "operating",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านการพัฒนาและเสริมสร้างศักยภาพทรัพยากรมนุษย์",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 55000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 57000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 58000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 60000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 62000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOE-001-003",
+              "name": "โครงการพัฒนาระบบเทคโนโลยีสารสนเทศเพื่อการศึกษา",
+              "amount": 38200000000,
+              "previous_amount": 22000000000,
+              "change_pct": 73.6,
+              "budget_type": "investment",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานยุทธศาสตร์เพื่อสนับสนุนด้านการศึกษา",
+              "flags": [
+                {
+                  "rule": "unusual_increase",
+                  "severity": "warning",
+                  "label": "เพิ่มผิดปกติ",
+                  "description": "งบปีนี้ ฿38200.0M เพิ่มขึ้น 74% จากปีก่อน (฿22000.0M)",
+                  "statistical_context": {
+                    "previous_avg_5yr": 22000000000,
+                    "threshold_pct": 50
+                  }
+                }
+              ],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 12000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 14000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 18000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 22000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 38200000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "moe-002",
+          "name": "สำนักงานคณะกรรมการการอาชีวศึกษา",
+          "budget": 98400000000,
+          "projects": [
+            {
+              "id": "B68-MOE-002-001",
+              "name": "เงินเดือนบุคลากรอาชีวศึกษา",
+              "amount": 55000000000,
+              "previous_amount": 53000000000,
+              "change_pct": 3.8,
+              "budget_type": "personnel",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านการพัฒนาและเสริมสร้างศักยภาพทรัพยากรมนุษย์",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 47000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 49000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 51000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 53000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 55000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOE-002-002",
+              "name": "โครงการพัฒนาอาชีวศึกษาสู่ความเป็นเลิศ",
+              "amount": 43400000000,
+              "previous_amount": 41000000000,
+              "change_pct": 5.9,
+              "budget_type": "operating",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานยุทธศาสตร์เพื่อสนับสนุนด้านการศึกษา",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 35000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 37000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 39000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 41000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 43400000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "moe-003",
+          "name": "สำนักงานปลัดกระทรวงศึกษาธิการ",
+          "budget": 115200000000,
+          "projects": [
+            {
+              "id": "B68-MOE-003-001",
+              "name": "ค่าใช้จ่ายบุคลากรสำนักงานปลัด",
+              "amount": 80000000000,
+              "previous_amount": 77000000000,
+              "change_pct": 3.9,
+              "budget_type": "personnel",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านการบริหารงานทั่วไป",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 70000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 73000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 75000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 77000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 80000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOE-003-002",
+              "name": "โครงการปฏิรูปการศึกษาไทย",
+              "amount": 35200000000,
+              "previous_amount": 33000000000,
+              "change_pct": 6.7,
+              "budget_type": "investment",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานยุทธศาสตร์เพื่อสนับสนุนด้านการศึกษา",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 28000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 30000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 31000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 33000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 35200000000
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "moi",
+      "name": "กระทรวงมหาดไทย",
+      "budget": 384000000000,
+      "color_category": "gray",
+      "departments": [
+        {
+          "id": "moi-001",
+          "name": "กรมส่งเสริมการปกครองท้องถิ่น",
+          "budget": 210000000000,
+          "projects": [
+            {
+              "id": "B68-MOI-001-001",
+              "name": "เงินอุดหนุนองค์กรปกครองส่วนท้องถิ่น",
+              "amount": 180000000000,
+              "previous_amount": 175000000000,
+              "change_pct": 2.9,
+              "budget_type": "operating",
+              "province": "ทั่วประเทศ",
+              "plan_name": "แผนงานพื้นฐานด้านการสร้างความสามารถในการแข่งขัน",
+              "flags": [
+                {
+                  "rule": "statistical_outlier",
+                  "severity": "warning",
+                  "label": "มูลค่าสูงผิดปกติ",
+                  "description": "สูงกว่าค่าเฉลี่ยหมวดเดียวกัน (฿40426.7M) ถึง 4.5 เท่า (3.1 SD)",
+                  "statistical_context": {
+                    "previous_avg_5yr": 40426666666.666664,
+                    "std_deviations": 3.1408092112818053,
+                    "category_avg_multiple": 4.452506596306069
+                  }
+                }
+              ],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 160000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 165000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 170000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 175000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 180000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOI-001-002",
+              "name": "โครงการพัฒนาโครงสร้างพื้นฐานท้องถิ่น",
+              "amount": 30000000000,
+              "previous_amount": 28000000000,
+              "change_pct": 7.1,
+              "budget_type": "investment",
+              "province": "ทั่วประเทศ",
+              "plan_name": "แผนงานยุทธศาสตร์เพื่อสนับสนุนด้านการพัฒนาและเสริมสร้างศักยภาพ",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 22000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 24000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 26000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 28000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 30000000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "moi-002",
+          "name": "กรมโยธาธิการและผังเมือง",
+          "budget": 174000000000,
+          "projects": [
+            {
+              "id": "B68-MOI-002-001",
+              "name": "โครงการก่อสร้างถนนและสาธารณูปโภค",
+              "amount": 120000000000,
+              "previous_amount": 115000000000,
+              "change_pct": 4.3,
+              "budget_type": "investment",
+              "province": "ทั่วประเทศ",
+              "plan_name": "แผนงานยุทธศาสตร์เพื่อสนับสนุนด้านการพัฒนาและเสริมสร้างศักยภาพ",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 100000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 106000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 110000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 115000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 120000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOI-002-002",
+              "name": "บุคลากรและค่าใช้จ่ายดำเนินงานกรมโยธา",
+              "amount": 54000000000,
+              "previous_amount": 52000000000,
+              "change_pct": 3.8,
+              "budget_type": "personnel",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านการบริหารงานทั่วไป",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 46000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 48000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 50000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 52000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 54000000000
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mod",
+      "name": "กระทรวงกลาโหม",
+      "budget": 232000000000,
+      "color_category": "coral",
+      "departments": [
+        {
+          "id": "mod-001",
+          "name": "กองทัพบก",
+          "budget": 102000000000,
+          "projects": [
+            {
+              "id": "B68-MOD-001-001",
+              "name": "เงินเดือนและสวัสดิการทหารบก",
+              "amount": 72000000000,
+              "previous_amount": 70000000000,
+              "change_pct": 2.9,
+              "budget_type": "personnel",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านความมั่นคง",
+              "flags": [
+                {
+                  "rule": "duplicate",
+                  "severity": "warning",
+                  "label": "อาจซ้ำซ้อน",
+                  "description": "ชื่อคล้าย \"เงินเดือนและสวัสดิการทหารเรือ\" (90%) — อาจซ้ำซ้อนกับหน่วยงานอื่น",
+                  "statistical_context": {
+                    "previous_avg_5yr": 0,
+                    "match_score": 0.9019607843137255,
+                    "matched_project_id": "B68-MOD-002-001",
+                    "matched_project_name": "เงินเดือนและสวัสดิการทหารเรือ"
+                  }
+                }
+              ],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 64000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 66000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 68000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 70000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 72000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOD-001-002",
+              "name": "โครงการจัดซื้ออาวุธยุทโธปกรณ์ทางบก",
+              "amount": 30000000000,
+              "previous_amount": 10500000000,
+              "change_pct": 185.7,
+              "budget_type": "investment",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานยุทธศาสตร์ด้านความมั่นคง",
+              "flags": [
+                {
+                  "rule": "unusual_increase",
+                  "severity": "critical",
+                  "label": "เพิ่มผิดปกติ",
+                  "description": "งบปีนี้ ฿30000.0M เพิ่มขึ้น 186% จากปีก่อน (฿10500.0M)",
+                  "statistical_context": {
+                    "previous_avg_5yr": 10500000000,
+                    "threshold_pct": 50
+                  }
+                },
+                {
+                  "rule": "duplicate",
+                  "severity": "critical",
+                  "label": "อาจซ้ำซ้อน",
+                  "description": "ชื่อคล้าย \"โครงการจัดซื้ออาวุธยุทโธปกรณ์ทางเรือ\" (89%) — อาจซ้ำซ้อนกับหน่วยงานอื่น",
+                  "statistical_context": {
+                    "previous_avg_5yr": 0,
+                    "match_score": 0.8888888888888888,
+                    "matched_project_id": "B68-MOD-002-002",
+                    "matched_project_name": "โครงการจัดซื้ออาวุธยุทโธปกรณ์ทางเรือ"
+                  }
+                }
+              ],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 8000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 9000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 10000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 10500000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 30000000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mod-002",
+          "name": "กองทัพเรือ",
+          "budget": 68000000000,
+          "projects": [
+            {
+              "id": "B68-MOD-002-001",
+              "name": "เงินเดือนและสวัสดิการทหารเรือ",
+              "amount": 42000000000,
+              "previous_amount": 40000000000,
+              "change_pct": 5,
+              "budget_type": "personnel",
+              "province": "ชลบุรี",
+              "plan_name": "แผนงานพื้นฐานด้านความมั่นคง",
+              "flags": [
+                {
+                  "rule": "duplicate",
+                  "severity": "warning",
+                  "label": "อาจซ้ำซ้อน",
+                  "description": "ชื่อคล้าย \"เงินเดือนและสวัสดิการทหารบก\" (90%) — อาจซ้ำซ้อนกับหน่วยงานอื่น",
+                  "statistical_context": {
+                    "previous_avg_5yr": 0,
+                    "match_score": 0.9019607843137255,
+                    "matched_project_id": "B68-MOD-001-001",
+                    "matched_project_name": "เงินเดือนและสวัสดิการทหารบก"
+                  }
+                }
+              ],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 36000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 37000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 38000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 40000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 42000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOD-002-002",
+              "name": "โครงการจัดซื้ออาวุธยุทโธปกรณ์ทางเรือ",
+              "amount": 26000000000,
+              "previous_amount": 7200000000,
+              "change_pct": 261.1,
+              "budget_type": "investment",
+              "province": "ชลบุรี",
+              "plan_name": "แผนงานยุทธศาสตร์ด้านความมั่นคง",
+              "flags": [
+                {
+                  "rule": "unusual_increase",
+                  "severity": "critical",
+                  "label": "เพิ่มผิดปกติ",
+                  "description": "งบปีนี้ ฿26000.0M เพิ่มขึ้น 261% จากปีก่อน (฿7200.0M)",
+                  "statistical_context": {
+                    "previous_avg_5yr": 7200000000,
+                    "threshold_pct": 50
+                  }
+                },
+                {
+                  "rule": "duplicate",
+                  "severity": "critical",
+                  "label": "อาจซ้ำซ้อน",
+                  "description": "ชื่อคล้าย \"โครงการจัดซื้ออาวุธยุทโธปกรณ์ทางบก\" (89%) — อาจซ้ำซ้อนกับหน่วยงานอื่น",
+                  "statistical_context": {
+                    "previous_avg_5yr": 0,
+                    "match_score": 0.8888888888888888,
+                    "matched_project_id": "B68-MOD-001-002",
+                    "matched_project_name": "โครงการจัดซื้ออาวุธยุทโธปกรณ์ทางบก"
+                  }
+                }
+              ],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 5500000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 6000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 6500000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 7200000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 26000000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mod-003",
+          "name": "กองทัพอากาศ",
+          "budget": 62000000000,
+          "projects": [
+            {
+              "id": "B68-MOD-003-001",
+              "name": "เงินเดือนและสวัสดิการทหารอากาศ",
+              "amount": 38000000000,
+              "previous_amount": 37000000000,
+              "change_pct": 2.7,
+              "budget_type": "personnel",
+              "province": "นครปฐม",
+              "plan_name": "แผนงานพื้นฐานด้านความมั่นคง",
+              "flags": [
+                {
+                  "rule": "duplicate",
+                  "severity": "warning",
+                  "label": "อาจซ้ำซ้อน",
+                  "description": "ชื่อคล้าย \"เงินเดือนและสวัสดิการทหารบก\" (88%) — อาจซ้ำซ้อนกับหน่วยงานอื่น",
+                  "statistical_context": {
+                    "previous_avg_5yr": 0,
+                    "match_score": 0.8846153846153846,
+                    "matched_project_id": "B68-MOD-001-001",
+                    "matched_project_name": "เงินเดือนและสวัสดิการทหารบก"
+                  }
+                }
+              ],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 33000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 34000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 36000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 37000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 38000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOD-003-002",
+              "name": "ค่าซ่อมบำรุงอากาศยานและอุปกรณ์",
+              "amount": 24000000000,
+              "previous_amount": 22000000000,
+              "change_pct": 9.1,
+              "budget_type": "operating",
+              "province": "นครปฐม",
+              "plan_name": "แผนงานพื้นฐานด้านความมั่นคง",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 18000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 19000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 20000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 22000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 24000000000
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "moph",
+      "name": "กระทรวงสาธารณสุข",
+      "budget": 200000000000,
+      "color_category": "teal",
+      "departments": [
+        {
+          "id": "moph-001",
+          "name": "กรมการแพทย์",
+          "budget": 82000000000,
+          "projects": [
+            {
+              "id": "B68-MOPH-001-001",
+              "name": "ค่าใช้จ่ายบุคลากรด้านการแพทย์",
+              "amount": 52000000000,
+              "previous_amount": 50000000000,
+              "change_pct": 4,
+              "budget_type": "personnel",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านการสาธารณสุข",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 44000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 46000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 48000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 50000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 52000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOPH-001-002",
+              "name": "โครงการพัฒนาโรงพยาบาลและสิ่งอำนวยความสะดวก",
+              "amount": 30000000000,
+              "previous_amount": 28500000000,
+              "change_pct": 5.3,
+              "budget_type": "investment",
+              "province": "ทั่วประเทศ",
+              "plan_name": "แผนงานยุทธศาสตร์ด้านสาธารณสุข",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 24000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 26000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 27000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 28500000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 30000000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "moph-002",
+          "name": "สำนักงานปลัดกระทรวงสาธารณสุข",
+          "budget": 118000000000,
+          "projects": [
+            {
+              "id": "B68-MOPH-002-001",
+              "name": "บุคลากรสาธารณสุขทั่วประเทศ",
+              "amount": 90000000000,
+              "previous_amount": 87000000000,
+              "change_pct": 3.4,
+              "budget_type": "personnel",
+              "province": "ทั่วประเทศ",
+              "plan_name": "แผนงานพื้นฐานด้านการสาธารณสุข",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 80000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 83000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 85000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 87000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 90000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOPH-002-002",
+              "name": "โครงการวัคซีนและสุขภาพป้องกันโรค",
+              "amount": 28000000000,
+              "previous_amount": 26000000000,
+              "change_pct": 7.7,
+              "budget_type": "operating",
+              "province": "ทั่วประเทศ",
+              "plan_name": "แผนงานยุทธศาสตร์ด้านสาธารณสุข",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 22000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 23000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 24000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 26000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 28000000000
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mot",
+      "name": "กระทรวงคมนาคม",
+      "budget": 198000000000,
+      "color_category": "amber",
+      "departments": [
+        {
+          "id": "mot-001",
+          "name": "กรมทางหลวง",
+          "budget": 92000000000,
+          "projects": [
+            {
+              "id": "B68-MOT-001-001",
+              "name": "โครงการก่อสร้างและขยายถนนทางหลวง",
+              "amount": 65000000000,
+              "previous_amount": 62000000000,
+              "change_pct": 4.8,
+              "budget_type": "investment",
+              "province": "ทั่วประเทศ",
+              "plan_name": "แผนงานยุทธศาสตร์ด้านโครงสร้างพื้นฐาน",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 55000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 58000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 60000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 62000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 65000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOT-001-002",
+              "name": "ค่าบำรุงรักษาทางหลวงแผ่นดิน",
+              "amount": 27000000000,
+              "previous_amount": 26000000000,
+              "change_pct": 3.8,
+              "budget_type": "operating",
+              "province": "ทั่วประเทศ",
+              "plan_name": "แผนงานพื้นฐานด้านโครงสร้างพื้นฐาน",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 22000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 23000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 24000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 26000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 27000000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mot-002",
+          "name": "การรถไฟแห่งประเทศไทย",
+          "budget": 106000000000,
+          "projects": [
+            {
+              "id": "B68-MOT-002-001",
+              "name": "โครงการรถไฟความเร็วสูงไทย-จีน",
+              "amount": 70000000000,
+              "previous_amount": 28000000000,
+              "change_pct": 150,
+              "budget_type": "investment",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานยุทธศาสตร์ด้านโครงสร้างพื้นฐาน",
+              "flags": [
+                {
+                  "rule": "unusual_increase",
+                  "severity": "critical",
+                  "label": "เพิ่มผิดปกติ",
+                  "description": "งบปีนี้ ฿70000.0M เพิ่มขึ้น 150% จากปีก่อน (฿28000.0M)",
+                  "statistical_context": {
+                    "previous_avg_5yr": 28000000000,
+                    "threshold_pct": 50
+                  }
+                }
+              ],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 18000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 20000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 22000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 28000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 70000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOT-002-002",
+              "name": "บุคลากรและค่าดำเนินการรถไฟไทย",
+              "amount": 36000000000,
+              "previous_amount": 35000000000,
+              "change_pct": 2.9,
+              "budget_type": "personnel",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านโครงสร้างพื้นฐาน",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 31000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 32000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 33000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 35000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 36000000000
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mof",
+      "name": "กระทรวงการคลัง",
+      "budget": 304000000000,
+      "color_category": "amber",
+      "departments": [
+        {
+          "id": "mof-001",
+          "name": "กรมบัญชีกลาง",
+          "budget": 124000000000,
+          "projects": [
+            {
+              "id": "B68-MOF-001-001",
+              "name": "งบเงินอุดหนุนสวัสดิการข้าราชการบำนาญ",
+              "amount": 105000000000,
+              "previous_amount": 102000000000,
+              "change_pct": 2.9,
+              "budget_type": "operating",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านการบริหารงานทั่วไป",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 93000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 96000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 99000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 102000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 105000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOF-001-002",
+              "name": "บุคลากรกรมบัญชีกลาง",
+              "amount": 19000000000,
+              "previous_amount": 18500000000,
+              "change_pct": 2.7,
+              "budget_type": "personnel",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านการบริหารงานทั่วไป",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 16500000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 17000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 17500000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 18500000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 19000000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mof-002",
+          "name": "กรมสรรพากร",
+          "budget": 180000000000,
+          "projects": [
+            {
+              "id": "B68-MOF-002-001",
+              "name": "บุคลากรสรรพากรทั่วประเทศ",
+              "amount": 48000000000,
+              "previous_amount": 46500000000,
+              "change_pct": 3.2,
+              "budget_type": "personnel",
+              "province": "ทั่วประเทศ",
+              "plan_name": "แผนงานพื้นฐานด้านการบริหารงานทั่วไป",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 42000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 43000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 45000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 46500000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 48000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOF-002-002",
+              "name": "โครงการพัฒนาระบบ e-Tax และดิจิทัลภาษี",
+              "amount": 132000000000,
+              "previous_amount": 128000000000,
+              "change_pct": 3.1,
+              "budget_type": "investment",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานยุทธศาสตร์ด้านการบริหารงานทั่วไป",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 118000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 122000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 125000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 128000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 132000000000
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "moac",
+      "name": "กระทรวงเกษตรและสหกรณ์",
+      "budget": 102000000000,
+      "color_category": "teal",
+      "departments": [
+        {
+          "id": "moac-001",
+          "name": "กรมชลประทาน",
+          "budget": 58000000000,
+          "projects": [
+            {
+              "id": "B68-MOAC-001-001",
+              "name": "โครงการพัฒนาแหล่งน้ำและชลประทาน",
+              "amount": 42000000000,
+              "previous_amount": 40000000000,
+              "change_pct": 5,
+              "budget_type": "investment",
+              "province": "ทั่วประเทศ",
+              "plan_name": "แผนงานยุทธศาสตร์ด้านการเกษตร",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 35000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 37000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 38000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 40000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 42000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOAC-001-002",
+              "name": "บุคลากรกรมชลประทาน",
+              "amount": 16000000000,
+              "previous_amount": 15500000000,
+              "change_pct": 3.2,
+              "budget_type": "personnel",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านการเกษตร",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 13500000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 14000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 14500000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 15500000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 16000000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "moac-002",
+          "name": "กรมส่งเสริมการเกษตร",
+          "budget": 44000000000,
+          "projects": [
+            {
+              "id": "B68-MOAC-002-001",
+              "name": "โครงการส่งเสริมเกษตรกรและสหกรณ์",
+              "amount": 28000000000,
+              "previous_amount": 27000000000,
+              "change_pct": 3.7,
+              "budget_type": "operating",
+              "province": "ทั่วประเทศ",
+              "plan_name": "แผนงานยุทธศาสตร์ด้านการเกษตร",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 23000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 24000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 25000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 27000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 28000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOAC-002-002",
+              "name": "บุคลากรและค่าดำเนินการกรมส่งเสริม",
+              "amount": 16000000000,
+              "previous_amount": 15500000000,
+              "change_pct": 3.2,
+              "budget_type": "personnel",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านการเกษตร",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 13500000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 14000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 14500000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 15500000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 16000000000
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pmo",
+      "name": "สำนักนายกรัฐมนตรี",
+      "budget": 42000000000,
+      "color_category": "gray",
+      "departments": [
+        {
+          "id": "pmo-001",
+          "name": "สำนักงานปลัดสำนักนายกรัฐมนตรี",
+          "budget": 22000000000,
+          "projects": [
+            {
+              "id": "B68-PMO-001-001",
+              "name": "บุคลากรสำนักนายกรัฐมนตรี",
+              "amount": 12000000000,
+              "previous_amount": 11500000000,
+              "change_pct": 4.3,
+              "budget_type": "personnel",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านการบริหารงานทั่วไป",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 10000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 10500000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 11000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 11500000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 12000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-PMO-001-002",
+              "name": "โครงการจ้างที่ปรึกษาพิเศษนายกรัฐมนตรี",
+              "amount": 4800000000,
+              "previous_amount": 2100000000,
+              "change_pct": 128.6,
+              "budget_type": "operating",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านการบริหารงานทั่วไป",
+              "flags": [
+                {
+                  "rule": "unusual_increase",
+                  "severity": "critical",
+                  "label": "เพิ่มผิดปกติ",
+                  "description": "งบปีนี้ ฿4800.0M เพิ่มขึ้น 129% จากปีก่อน (฿2100.0M)",
+                  "statistical_context": {
+                    "previous_avg_5yr": 2100000000,
+                    "threshold_pct": 50
+                  }
+                }
+              ],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 1500000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 1600000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 1800000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 2100000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 4800000000
+                }
+              ]
+            },
+            {
+              "id": "B68-PMO-001-003",
+              "name": "ค่าใช้จ่ายในการดำเนินงานสำนักนายกรัฐมนตรี",
+              "amount": 5200000000,
+              "previous_amount": 5000000000,
+              "change_pct": 4,
+              "budget_type": "operating",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านการบริหารงานทั่วไป",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 4300000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 4500000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 4700000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 5000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 5200000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "pmo-002",
+          "name": "สำนักงานคณะกรรมการพัฒนาการเศรษฐกิจและสังคมแห่งชาติ",
+          "budget": 20000000000,
+          "projects": [
+            {
+              "id": "B68-PMO-002-001",
+              "name": "บุคลากรสภาพัฒน์",
+              "amount": 8000000000,
+              "previous_amount": 7800000000,
+              "change_pct": 2.6,
+              "budget_type": "personnel",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านการบริหารงานทั่วไป",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 7000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 7200000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 7500000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 7800000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 8000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-PMO-002-002",
+              "name": "โครงการวางแผนพัฒนาเศรษฐกิจและสังคม",
+              "amount": 12000000000,
+              "previous_amount": 11500000000,
+              "change_pct": 4.3,
+              "budget_type": "operating",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานยุทธศาสตร์ด้านการบริหารงานทั่วไป",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 10000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 10500000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 11000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 11500000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 12000000000
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mdes",
+      "name": "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม",
+      "budget": 19000000000,
+      "color_category": "purple",
+      "departments": [
+        {
+          "id": "mdes-001",
+          "name": "สำนักงานปลัดกระทรวงดิจิทัล",
+          "budget": 11000000000,
+          "projects": [
+            {
+              "id": "B68-MDES-001-001",
+              "name": "โครงการระบบ Digital ID แห่งชาติ",
+              "amount": 6800000000,
+              "previous_amount": 1500000000,
+              "change_pct": 353.3,
+              "budget_type": "investment",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานยุทธศาสตร์เพื่อสนับสนุนด้านดิจิทัล",
+              "flags": [
+                {
+                  "rule": "unusual_increase",
+                  "severity": "critical",
+                  "label": "เพิ่มผิดปกติ",
+                  "description": "งบปีนี้ ฿6800.0M เพิ่มขึ้น 353% จากปีก่อน (฿1500.0M)",
+                  "statistical_context": {
+                    "previous_avg_5yr": 1500000000,
+                    "threshold_pct": 50
+                  }
+                }
+              ],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 800000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 1000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 1200000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 1500000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 6800000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MDES-001-002",
+              "name": "บุคลากรและค่าดำเนินการกระทรวงดิจิทัล",
+              "amount": 4200000000,
+              "previous_amount": 4000000000,
+              "change_pct": 5,
+              "budget_type": "personnel",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านดิจิทัล",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 3500000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 3700000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 3800000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 4000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 4200000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mdes-002",
+          "name": "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์",
+          "budget": 8000000000,
+          "projects": [
+            {
+              "id": "B68-MDES-002-001",
+              "name": "โครงการยกระดับโครงสร้างพื้นฐาน Cyber Security",
+              "amount": 5000000000,
+              "previous_amount": 4500000000,
+              "change_pct": 11.1,
+              "budget_type": "investment",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานยุทธศาสตร์เพื่อสนับสนุนด้านดิจิทัล",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 3000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 3500000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 4000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 4500000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 5000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MDES-002-002",
+              "name": "บุคลากรและค่าดำเนินการ ETDA",
+              "amount": 3000000000,
+              "previous_amount": 2900000000,
+              "change_pct": 3.4,
+              "budget_type": "personnel",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านดิจิทัล",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 2400000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 2600000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 2700000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 2900000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 3000000000
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mol",
+      "name": "กระทรวงแรงงาน",
+      "budget": 66000000000,
+      "color_category": "teal",
+      "departments": [
+        {
+          "id": "mol-001",
+          "name": "กรมการจัดหางาน",
+          "budget": 32000000000,
+          "projects": [
+            {
+              "id": "B68-MOL-001-001",
+              "name": "โครงการส่งเสริมการจ้างงานและพัฒนาทักษะแรงงาน",
+              "amount": 22000000000,
+              "previous_amount": 21000000000,
+              "change_pct": 4.8,
+              "budget_type": "operating",
+              "province": "ทั่วประเทศ",
+              "plan_name": "แผนงานยุทธศาสตร์ด้านแรงงาน",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 18000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 19000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 20000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 21000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 22000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOL-001-002",
+              "name": "บุคลากรกรมการจัดหางาน",
+              "amount": 10000000000,
+              "previous_amount": 9700000000,
+              "change_pct": 3.1,
+              "budget_type": "personnel",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านแรงงาน",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 8500000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 9000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 9300000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 9700000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 10000000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mol-002",
+          "name": "กรมพัฒนาฝีมือแรงงาน",
+          "budget": 34000000000,
+          "projects": [
+            {
+              "id": "B68-MOL-002-001",
+              "name": "โครงการพัฒนาทักษะแรงงานแห่งอนาคต",
+              "amount": 22000000000,
+              "previous_amount": 21000000000,
+              "change_pct": 4.8,
+              "budget_type": "operating",
+              "province": "ทั่วประเทศ",
+              "plan_name": "แผนงานยุทธศาสตร์ด้านแรงงาน",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 18000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 19000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 20000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 21000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 22000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MOL-002-002",
+              "name": "บุคลากรกรมพัฒนาฝีมือแรงงาน",
+              "amount": 12000000000,
+              "previous_amount": 11500000000,
+              "change_pct": 4.3,
+              "budget_type": "personnel",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านแรงงาน",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 10000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 10500000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 11000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 11500000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 12000000000
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mhesi",
+      "name": "กระทรวงการอุดมศึกษาวิทยาศาสตร์วิจัยและนวัตกรรม",
+      "budget": 61000000000,
+      "color_category": "purple",
+      "departments": [
+        {
+          "id": "mhesi-001",
+          "name": "สำนักงานปลัดกระทรวง อว.",
+          "budget": 35000000000,
+          "projects": [
+            {
+              "id": "B68-MHESI-001-001",
+              "name": "เงินอุดหนุนมหาวิทยาลัยของรัฐ",
+              "amount": 25000000000,
+              "previous_amount": 24000000000,
+              "change_pct": 4.2,
+              "budget_type": "operating",
+              "province": "ทั่วประเทศ",
+              "plan_name": "แผนงานพื้นฐานด้านการพัฒนาและเสริมสร้างศักยภาพทรัพยากรมนุษย์",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 21000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 22000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 23000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 24000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 25000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MHESI-001-002",
+              "name": "บุคลากรและค่าดำเนินการ",
+              "amount": 10000000000,
+              "previous_amount": 9700000000,
+              "change_pct": 3.1,
+              "budget_type": "personnel",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านการบริหารงานทั่วไป",
+              "flags": [
+                {
+                  "rule": "duplicate",
+                  "severity": "warning",
+                  "label": "อาจซ้ำซ้อน",
+                  "description": "ชื่อคล้าย \"บุคลากรและค่าดำเนินงาน วช.\" (84%) — อาจซ้ำซ้อนกับหน่วยงานอื่น",
+                  "statistical_context": {
+                    "previous_avg_5yr": 0,
+                    "match_score": 0.8372093023255814,
+                    "matched_project_id": "B68-MHESI-002-002",
+                    "matched_project_name": "บุคลากรและค่าดำเนินงาน วช."
+                  }
+                }
+              ],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 8500000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 9000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 9300000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 9700000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 10000000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mhesi-002",
+          "name": "สำนักงานการวิจัยแห่งชาติ",
+          "budget": 26000000000,
+          "projects": [
+            {
+              "id": "B68-MHESI-002-001",
+              "name": "ทุนวิจัยและนวัตกรรมแห่งชาติ",
+              "amount": 18000000000,
+              "previous_amount": 17000000000,
+              "change_pct": 5.9,
+              "budget_type": "operating",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานยุทธศาสตร์เพื่อสนับสนุนด้านวิทยาศาสตร์",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 14000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 15000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 16000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 17000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 18000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-MHESI-002-002",
+              "name": "บุคลากรและค่าดำเนินงาน วช.",
+              "amount": 8000000000,
+              "previous_amount": 7700000000,
+              "change_pct": 3.9,
+              "budget_type": "personnel",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "แผนงานพื้นฐานด้านการบริหารงานทั่วไป",
+              "flags": [
+                {
+                  "rule": "duplicate",
+                  "severity": "warning",
+                  "label": "อาจซ้ำซ้อน",
+                  "description": "ชื่อคล้าย \"บุคลากรและค่าดำเนินการ\" (84%) — อาจซ้ำซ้อนกับหน่วยงานอื่น",
+                  "statistical_context": {
+                    "previous_avg_5yr": 0,
+                    "match_score": 0.8372093023255814,
+                    "matched_project_id": "B68-MHESI-001-002",
+                    "matched_project_name": "บุคลากรและค่าดำเนินการ"
+                  }
+                }
+              ],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 6500000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 7000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 7300000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 7700000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 8000000000
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "other",
+      "name": "งบกลางและรายจ่ายอื่น",
+      "budget": 1132700000000,
+      "color_category": "gray",
+      "departments": [
+        {
+          "id": "other-001",
+          "name": "งบกลาง รายการสำรองจ่ายเพื่อกรณีฉุกเฉิน",
+          "budget": 960000000000,
+          "projects": [
+            {
+              "id": "B68-OTHER-001-001",
+              "name": "งบสำรองฉุกเฉินและจำเป็น",
+              "amount": 580000000000,
+              "previous_amount": 560000000000,
+              "change_pct": 3.6,
+              "budget_type": "other",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "งบกลาง",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 520000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 530000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 545000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 560000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 580000000000
+                }
+              ]
+            },
+            {
+              "id": "B68-OTHER-001-002",
+              "name": "เงินชดใช้ค่าใช้จ่ายในการรักษาพยาบาลข้าราชการ",
+              "amount": 380000000000,
+              "previous_amount": 370000000000,
+              "change_pct": 2.7,
+              "budget_type": "other",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "งบกลาง",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 340000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 350000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 360000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 370000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 380000000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "other-002",
+          "name": "การชำระหนี้ภาครัฐ",
+          "budget": 172700000000,
+          "projects": [
+            {
+              "id": "B68-OTHER-002-001",
+              "name": "การชำระต้นเงินกู้และดอกเบี้ยเงินกู้",
+              "amount": 172700000000,
+              "previous_amount": 168000000000,
+              "change_pct": 2.8,
+              "budget_type": "other",
+              "province": "กรุงเทพมหานคร",
+              "plan_name": "การชำระหนี้ภาครัฐ",
+              "flags": [],
+              "history": [
+                {
+                  "year": "2564",
+                  "amount": 155000000000
+                },
+                {
+                  "year": "2565",
+                  "amount": 160000000000
+                },
+                {
+                  "year": "2566",
+                  "amount": 164000000000
+                },
+                {
+                  "year": "2567",
+                  "amount": 168000000000
+                },
+                {
+                  "year": "2568",
+                  "amount": 172700000000
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

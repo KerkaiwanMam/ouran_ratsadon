@@ -1,0 +1,87 @@
+# Analyzer spec — Civic red flags, leak detection, forecasting (technical reference)
+
+> ส่วนขยายจาก CLAUDE.md — สูตร/เกณฑ์ตัวเลขที่ใช้จริงตอน implement analyzer และ pipeline
+> (ดูเหตุผลเชิงกลยุทธ์/ทำไมต้องมีฟีเจอร์นี้ใน `business-logic-v2.md`)
+
+## Civic Layer data pipeline
+
+Government data is NOT user-uploaded. The team pre-processes it.
+
+### Data storage strategy (decided — do not mix patterns)
+
+Civic data is **dual-stored**, each store serving a distinct access pattern. Do not query Postgres for hot-path reads, and do not try to run filtered/paginated search against the in-memory tree.
+
+- **Source of truth**: `data/budget-XXXX.json` files, one per fiscal year, committed to the repo. These are also bulk-loaded into Postgres (`BudgetProject`, `BudgetMinistry`, `BudgetDepartment` tables — see database-schema.md) via the admin upload pipeline, so the data is queryable, indexable, and survives a server restart.
+- **In-memory cache** (`lib/civic-cache.ts`, loaded once per fiscal year at server start from Postgres, not from JSON directly): used ONLY for read patterns that need the full tree shape — `/explore` treemap/sunburst, drill-down breadcrumb, year-over-year compare, red-flag aggregation. These are small (≤ a few MB per year, ~4 years = single-digit MB) and rarely change, so in-memory is correct here.
+- **Postgres + Prisma + indexes**: used for `/api/civic/search` and `/api/civic/export/*` — anything involving filters (ministry, budget type, amount range, status), free-text search, sort, or pagination. Add indexes on `(fiscal_year, ministry_id)`, `(amount)`, `(flag_severity)`, and a trigram/GIN index on `name` for Thai text search. This is the fix for the scaling problem of running multi-filter queries over an in-memory array.
+- **Rule of thumb when adding a new Civic endpoint**: if it returns a bounded tree/aggregate → read from cache; if it filters/sorts/paginates a flat list → query Postgres.
+
+### Workflow
+1. Team downloads PDF from `bb.go.th` once per fiscal year
+2. Run Python script to parse → produces `data/budget-XXXX.json`
+3. Team reviews JSON for parsing errors before publish
+4. Admin uploads via `/admin/civic-data` → JSON is (a) bulk-inserted into Postgres tables and (b) used to rebuild the in-memory cache for that fiscal year — both stores updated atomically in one admin action
+
+### Red flag detection rules (Civic Layer)
+Rules run once when data is loaded (during the admin upload step, not per-request), results stored as a `flags` field on each project row in Postgres AND cached in memory:
+
+- **Rule 1 — Unusual increase**: project budget increased >50% from previous year → flag "เพิ่มผิดปกติ"
+  - *Fallback*: if `previous_amount` is null/missing (new project, first year in dataset), skip Rule 1 — do not treat "no prior year" as a 0 → N% increase. Tag the project as `is_new_project: true` instead so the UI can show "โครงการใหม่" rather than a misleading red flag.
+- **Rule 2 — Statistical outlier**: project amount >3 SD from category mean → flag "มูลค่าสูง"
+  - *Fallback*: requires ≥5 projects in the same category to compute a meaningful SD; categories with fewer samples are excluded from this rule (avoids false positives from tiny sample sizes).
+- **Rule 3 — Duplicate detection**: fuzzy match >80% on project name across different departments → flag "อาจซ้ำซ้อน"
+  - *Fallback*: normalize Thai text first (strip whitespace variants, common abbreviations เช่น "สนง." vs "สำนักงาน") before fuzzy matching, or the match rate will be artificially low.
+- **Rule 4 — Ratio anomaly**: budget composition (personnel/operating/investment ratio) deviates >40% from agency historical average → flag "สัดส่วนผิดปกติ"
+  - *Fallback*: requires ≥3 years of history for the same agency; agencies with less history are excluded from this rule.
+
+Severity:
+- critical = matches 2+ rules OR rule 1 with >100% increase
+- warning = matches 1 rule
+
+> Phase 0 ships Rules 1 & 2 only; Rules 3 & 4 are Phase 1 — see roadmap.md
+
+## Business Layer logic (SME analysis)
+
+### Auto-categorization
+Keyword matching with Thai/English bilingual rules:
+- "เงินเดือน|ค่าจ้าง|salary|wage" → บุคลากร (personnel)
+- "ค่าเช่า|rent|office" → สถานที่ (premises)
+- "วัตถุดิบ|สินค้า|material|inventory" → ต้นทุนสินค้า (COGS)
+- "ไฟฟ้า|น้ำประปา|โทรศัพท์|internet|utility" → สาธารณูปโภค (utilities)
+- "โฆษณา|marketing|ads" → การตลาด (marketing)
+- "เดินทาง|travel|transport" → ค่าเดินทาง (travel)
+- Unmatched → "ยังไม่จัดหมวดหมู่"; system learns from user's manual categorization
+
+### Leak detection rules (Business Layer)
+- **Monthly Spike**: category total >30% above trailing 3-month average
+- **Duplicate Payment**: (same amount) + (date diff <7 days) + (description fuzzy match >85%)
+- **Outlier Item**: amount >2.5 SD from same-category items over last 6 months
+- **Recurring Cost Creep**: recurring item growing >5% monthly for 3+ consecutive months
+
+> Phase 0 ships the Outlier rule only — the rest need real usage data to validate against (see roadmap.md)
+
+### Forecast logic (NOT ML)
+```
+# Weighted Moving Average
+weighted_avg = (month[-1]*3 + month[-2]*2 + month[-3]*1) / 6
+
+# Seasonal Adjustment (requires 12+ months of data)
+seasonal_index = avg_month[i] / overall_avg
+forecast[i] = weighted_avg * seasonal_index
+
+# Graceful degradation by data volume (most SMEs start with very little history):
+# < 3 months  → no forecast; show "ต้องมีข้อมูลอย่างน้อย 3 เดือนจึงจะพยากรณ์ได้"
+# 3-11 months → weighted moving average only, no seasonal adjustment;
+#               show "ยังไม่พอสำหรับการปรับตามฤดูกาล (ต้องการ 12 เดือนขึ้นไป)"
+# 12+ months  → full WMA + seasonal index
+
+# Cash Runway
+runway_months = current_cash / avg_monthly_net_burn
+
+# What-If
+input: revenue_change_pct
+adjusted_income = current_income * (1 + revenue_change_pct/100)
+recalculate net_burn → new runway
+```
+
+Always show disclaimer: "การพยากรณ์ใช้ค่าเฉลี่ยถ่วงน้ำหนัก ไม่ใช่ AI — ประกอบการตัดสินใจเท่านั้น"

@@ -1,27 +1,41 @@
 "use client";
-import { useState, useEffect } from "react";
-import type { User } from "@/types";
 
-export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+import useSWR from "swr";
+import type { User, Subscription } from "@/types";
 
-  useEffect(() => {
-    async function fetchUser() {
-      try {
-        const res = await fetch("/api/auth/me");
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data.user);
-        }
-      } catch {
-        // unauthenticated
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchUser();
-  }, []);
+const fetcher = (url: string) =>
+  fetch(url).then((r) => (r.ok ? r.json() : null));
 
-  return { user, loading };
+interface AuthState {
+  user: User | null;
+  subscription: Subscription | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  isPro: boolean;
+  isAdmin: boolean;
+  mutate: () => void;
+}
+
+export function useAuth(): AuthState {
+  const { data, isLoading, mutate } = useSWR<{
+    user: User;
+    subscription: Subscription | null;
+  } | null>("/api/auth/me", fetcher, {
+    revalidateOnFocus: false,
+    shouldRetryOnError: false,
+  });
+
+  const user = data?.user ?? null;
+  const subscription = data?.subscription ?? null;
+  const plan = subscription?.plan ?? "FREE";
+
+  return {
+    user,
+    subscription,
+    isLoading,
+    isAuthenticated: !!user,
+    isPro: plan === "PRO" || plan === "TEAM",
+    isAdmin: user?.role === "ADMIN",
+    mutate,
+  };
 }

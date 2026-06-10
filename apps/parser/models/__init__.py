@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from typing import Literal
 
+from .budget_line_item import BudgetLineItemRow, ParseResult
+
 
 class FileMetadata(BaseModel):
     filename: str
