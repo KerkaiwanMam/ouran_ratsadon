@@ -18,9 +18,12 @@ import { cleanupOrphanFiles } from "@/lib/orphan-cleaner";
 
 export async function GET(req: NextRequest) {
   // Verify cron secret — rejects all requests that don't carry the shared secret.
-  // Vercel automatically injects CRON_SECRET into cron invocations; for local
-  // dev you can call curl -H "x-cron-secret: <value>" localhost:3000/api/internal/cleanup-orphans
-  const secret = req.headers.get("x-cron-secret");
+  // Vercel Cron sends it as "Authorization: Bearer <CRON_SECRET>"; the
+  // x-cron-secret header is kept for local dev / manual triggers:
+  //   curl -H "x-cron-secret: <value>" localhost:3000/api/internal/cleanup-orphans
+  const headerSecret = req.headers.get("x-cron-secret");
+  const authHeader = req.headers.get("authorization");
+  const bearerSecret = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
   const expected = process.env.CRON_SECRET;
 
   if (!expected) {
@@ -28,7 +31,7 @@ export async function GET(req: NextRequest) {
     if (process.env.NODE_ENV === "production") {
       return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 500 });
     }
-  } else if (secret !== expected) {
+  } else if (headerSecret !== expected && bearerSecret !== expected) {
     return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   }
 

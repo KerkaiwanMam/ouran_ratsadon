@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { FileSourceFormat } from "@prisma/client";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import { validateExtension, ALLOWED_EXTENSIONS } from "@/lib/file-sanitizer";
 import { hasR2, createPresignedUploadPost } from "@/lib/r2";
@@ -13,13 +13,10 @@ import { hasR2, createPresignedUploadPost } from "@/lib/r2";
 // configured, to a local-disk fallback endpoint). The client never sends the
 // file body through this Next.js route, avoiding the Vercel ~4.5MB body limit.
 export async function POST(req: NextRequest) {
-  const payload = await getCurrentUser();
-  if (!payload) {
-    return NextResponse.json(
-      { error: "UNAUTHORIZED", message: "กรุณาเข้าสู่ระบบ" },
-      { status: 401 }
-    );
-  }
+  // requireAuth (not getCurrentUser) — verifies the user row still exists and
+  // isn't banned, so a stale JWT can't reach the File insert and trip its FK.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.error;
 
   let body: { filename?: string; fileSize?: number; contentType?: string; source_format?: string };
   try {
@@ -40,13 +37,15 @@ export async function POST(req: NextRequest) {
   }
 
   // Check Free plan quota (3 files/month)
-  const sub = await prisma.subscription.findUnique({ where: { userId: payload.sub } });
+  const sub = await prisma.subscription.findUnique({ where: { userId: auth.userId } });
   if (!sub || sub.plan === "FREE") {
     const monthStart = new Date();
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
+    // ERROR files don't count — a failed/abandoned upload shouldn't burn the
+    // user's monthly quota (orphan-cleaner marks stale UPLOADING rows ERROR).
     const count = await prisma.file.count({
-      where: { userId: payload.sub, uploadedAt: { gte: monthStart } },
+      where: { userId: auth.userId, uploadedAt: { gte: monthStart }, status: { not: "ERROR" } },
     });
     if (count >= 3) {
       return NextResponse.json(
@@ -89,11 +88,11 @@ export async function POST(req: NextRequest) {
   // Sanitize filename for use in the storage key (keep extension, strip path
   // separators / unsafe chars).
   const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const storageKey = `business/${payload.sub}/${Date.now()}-${randomUUID()}-${safeName}`;
+  const storageKey = `business/${auth.userId}/${Date.now()}-${randomUUID()}-${safeName}`;
 
   const fileRecord = await prisma.file.create({
     data: {
-      userId: payload.sub,
+      userId: auth.userId,
       filename,
       fileSize,
       fileType: ext,
@@ -103,10 +102,16 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  // Only accept the client's contentType if it's in the allowlist for this
+  // extension — it gets baked into the presigned policy and stored on the R2
+  // object, so an arbitrary value (e.g. text/html) must not pass through.
+  const allowedTypes = ALLOWED_EXTENSIONS[ext] ?? [];
+  const claimedType =
+    typeof contentType === "string" ? contentType.split(";")[0].trim() : null;
   const resolvedContentType =
-    contentType && typeof contentType === "string"
-      ? contentType
-      : ALLOWED_EXTENSIONS[ext]?.[0] ?? "application/octet-stream";
+    claimedType && allowedTypes.includes(claimedType)
+      ? claimedType
+      : allowedTypes[0] ?? "application/octet-stream";
 
   if (hasR2) {
     const presigned = await createPresignedUploadPost({

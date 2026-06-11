@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
+import { resolveLocalStoragePath } from "@/lib/file-storage";
 
 // ─── PUT /api/files/[id]/local-upload ────────────────────────────────────────
 // Dev-only fallback for the presign flow when R2 is not configured: the
@@ -10,17 +11,14 @@ import { prisma } from "@/lib/db";
 // they're written to the local uploads/ dir under the storageKey assigned by
 // /api/files/presign. Never used when R2 env vars are set.
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const payload = await getCurrentUser();
-  if (!payload) {
-    return NextResponse.json(
-      { error: "UNAUTHORIZED", message: "กรุณาเข้าสู่ระบบ" },
-      { status: 401 }
-    );
-  }
+  // requireAuth for parity with the rest of the upload flow (presign/confirm):
+  // stale-JWT and banned users are rejected before any bytes hit the disk.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.error;
 
   const { id } = await params;
   const fileRecord = await prisma.file.findUnique({ where: { id } });
-  if (!fileRecord || fileRecord.userId !== payload.sub) {
+  if (!fileRecord || fileRecord.userId !== auth.userId) {
     return NextResponse.json(
       { error: "NOT_FOUND", message: "ไม่พบไฟล์" },
       { status: 404 }
@@ -33,8 +31,22 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     );
   }
 
-  const sub = await prisma.subscription.findUnique({ where: { userId: payload.sub } });
+  const sub = await prisma.subscription.findUnique({ where: { userId: auth.userId } });
   const maxSize = !sub || sub.plan === "FREE" ? 10 * 1024 * 1024 : 50 * 1024 * 1024;
+
+  // Pre-upload validation: reject oversized requests via Content-Length BEFORE
+  // reading the body into memory — same guard as the legacy upload route
+  // (see "Pre-upload validation" in CLAUDE.md security status).
+  const contentLength = parseInt(req.headers.get("content-length") ?? "0", 10);
+  if (contentLength > maxSize) {
+    return NextResponse.json(
+      {
+        error: "FILE_TOO_LARGE",
+        message: `ไฟล์มีขนาดเกิน ${!sub || sub.plan === "FREE" ? "10" : "50"} MB`,
+      },
+      { status: 413 }
+    );
+  }
 
   const bytes = await req.arrayBuffer();
   if (bytes.byteLength === 0) {
@@ -53,8 +65,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     );
   }
 
-  const uploadsDir = path.join(process.cwd(), "uploads");
-  const filePath = path.join(uploadsDir, fileRecord.storageKey);
+  // resolveLocalStoragePath rejects any key that escapes uploads/ —
+  // storageKey is server-generated, this is defense-in-depth.
+  const filePath = resolveLocalStoragePath(fileRecord.storageKey);
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, Buffer.from(bytes));
 

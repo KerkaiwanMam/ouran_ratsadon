@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import { containsMacros } from "@/lib/file-sanitizer";
 import { getStoredObjectBytes, deleteStoredObject } from "@/lib/file-storage";
@@ -15,17 +15,15 @@ import { hashFileBytes, finalizeFileUpload, generateMockTransactions } from "@/l
 // Phase 3A #4: if a macro is detected, the R2 object is deleted immediately —
 // a flagged file never sits in the bucket waiting for cleanup.
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const payload = await getCurrentUser();
-  if (!payload) {
-    return NextResponse.json(
-      { error: "UNAUTHORIZED", message: "กรุณาเข้าสู่ระบบ" },
-      { status: 401 }
-    );
-  }
+  // requireAuth (not getCurrentUser) — verifies the user row still exists and
+  // isn't banned, so a stale JWT can't reach finalizeFileUpload's Transaction
+  // inserts and trip their userId FK.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.error;
 
   const { id } = await params;
   const fileRecord = await prisma.file.findUnique({ where: { id } });
-  if (!fileRecord || fileRecord.userId !== payload.sub) {
+  if (!fileRecord || fileRecord.userId !== auth.userId) {
     return NextResponse.json(
       { error: "NOT_FOUND", message: "ไม่พบไฟล์" },
       { status: 404 }
@@ -90,7 +88,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // ── File-level dedup: byte-identical re-upload ────────────────────────────
   if (!force) {
     const existingFile = await prisma.file.findFirst({
-      where: { userId: payload.sub, fileHash, NOT: { id: fileRecord.id } },
+      where: { userId: auth.userId, fileHash, NOT: { id: fileRecord.id } },
       orderBy: { uploadedAt: "desc" },
     });
     if (existingFile) {
@@ -116,16 +114,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
   }
 
-  await prisma.file.update({
-    where: { id: fileRecord.id },
+  // Atomic claim: only the request that flips UPLOADING → PROCESSING proceeds.
+  // The status check at the top is not enough — two concurrent confirms could
+  // both pass it and double-insert transactions. updateMany with the status in
+  // the WHERE makes the transition itself the lock.
+  const claimed = await prisma.file.updateMany({
+    where: { id: fileRecord.id, status: "UPLOADING" },
     data: { status: "PROCESSING", fileHash },
   });
+  if (claimed.count === 0) {
+    return NextResponse.json(
+      { error: "INVALID_STATE", message: "ไฟล์นี้ถูกประมวลผลไปแล้ว" },
+      { status: 409 }
+    );
+  }
 
   // For Phase 0, parse is simulated — generate mock transactions from the file
   // In production this would call the Python parser microservice
   try {
-    const mockTransactions = generateMockTransactions(fileRecord.filename, payload.sub, fileRecord.id);
-    const result = await finalizeFileUpload(fileRecord, mockTransactions, payload.sub);
+    const mockTransactions = generateMockTransactions(fileRecord.filename, auth.userId, fileRecord.id);
+    const result = await finalizeFileUpload(fileRecord, mockTransactions, auth.userId);
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
     await prisma.file.update({

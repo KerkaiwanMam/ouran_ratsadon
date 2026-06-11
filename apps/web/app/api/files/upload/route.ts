@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { FileSourceFormat } from "@prisma/client";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import {
   hashFileBytes,
@@ -24,22 +24,22 @@ import {
 // ─── Route handler ───────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  const payload = await getCurrentUser();
-  if (!payload) {
-    return NextResponse.json(
-      { error: "UNAUTHORIZED", message: "กรุณาเข้าสู่ระบบ" },
-      { status: 401 }
-    );
-  }
+  // requireAuth (not getCurrentUser) — verifies the user row still exists and
+  // isn't banned, so a stale JWT can't reach the File/Transaction inserts and
+  // trip their FKs.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.error;
 
   // Check Free plan quota (3 files/month)
-  const sub = await prisma.subscription.findUnique({ where: { userId: payload.sub } });
+  const sub = await prisma.subscription.findUnique({ where: { userId: auth.userId } });
   if (!sub || sub.plan === "FREE") {
     const monthStart = new Date();
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
+    // ERROR files don't count — a failed/abandoned upload shouldn't burn the
+    // user's monthly quota (orphan-cleaner marks stale UPLOADING rows ERROR).
     const count = await prisma.file.count({
-      where: { userId: payload.sub, uploadedAt: { gte: monthStart } },
+      where: { userId: auth.userId, uploadedAt: { gte: monthStart }, status: { not: "ERROR" } },
     });
     if (count >= 3) {
       return NextResponse.json(
@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
   // forced re-import (e.g. they want to retry after an ERROR status).
   if (!force) {
     const existingFile = await prisma.file.findFirst({
-      where: { userId: payload.sub, fileHash },
+      where: { userId: auth.userId, fileHash },
       orderBy: { uploadedAt: "desc" },
     });
     if (existingFile) {
@@ -168,17 +168,20 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Save to disk
+  // Save to disk. Sanitize the client-controlled filename before it becomes
+  // part of a filesystem path — a crafted name like "a/../../evil.csv" would
+  // otherwise escape uploads/ via path.join (same rule as the presign route).
   const uploadsDir = path.join(process.cwd(), "uploads");
   await mkdir(uploadsDir, { recursive: true });
-  const storageKey = `${Date.now()}-${file.name}`;
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const storageKey = `${Date.now()}-${safeName}`;
   const filePath = path.join(uploadsDir, storageKey);
   await writeFile(filePath, buffer);
 
   // Create file record
   const fileRecord = await prisma.file.create({
     data: {
-      userId: payload.sub,
+      userId: auth.userId,
       filename: file.name,
       fileSize: file.size,
       fileType: ext,
@@ -192,8 +195,8 @@ export async function POST(req: NextRequest) {
   // For Phase 0, parse is simulated — generate mock transactions from the file
   // In production this would call the Python parser microservice
   try {
-    const mockTransactions = generateMockTransactions(file.name, payload.sub, fileRecord.id);
-    const result = await finalizeFileUpload(fileRecord, mockTransactions, payload.sub);
+    const mockTransactions = generateMockTransactions(file.name, auth.userId, fileRecord.id);
+    const result = await finalizeFileUpload(fileRecord, mockTransactions, auth.userId);
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
     await prisma.file.update({

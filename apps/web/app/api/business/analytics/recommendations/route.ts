@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyTokenFromRequest } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth-helpers";
 import { getRecommendations, recomputeRecommendations } from "@/lib/analytics/recommend";
 
 // GET  /api/business/analytics/recommendations?status=PENDING
@@ -10,13 +10,10 @@ import { getRecommendations, recomputeRecommendations } from "@/lib/analytics/re
 // diagnostic insights + forecast snapshots into concrete next-best-action
 // suggestions, with apply/dismiss feedback handled by the [id] route.
 export async function GET(req: NextRequest) {
-  const payload = await verifyTokenFromRequest(req);
-  if (!payload) {
-    return NextResponse.json(
-      { error: "UNAUTHORIZED", message: "กรุณาเข้าสู่ระบบ" },
-      { status: 401 }
-    );
-  }
+  // requireAuth — recomputeRecommendations inserts rows with the token's
+  // userId; a stale JWT would trip their FK.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.error;
 
   const { searchParams } = new URL(req.url);
   const statusParam = searchParams.get("status");
@@ -25,20 +22,17 @@ export async function GET(req: NextRequest) {
       ? statusParam
       : undefined;
 
-  const recommendations = await getRecommendations(payload.sub, status);
+  const recommendations = await getRecommendations(auth.userId, status);
   return NextResponse.json({ recommendations });
 }
 
 export async function POST(req: NextRequest) {
-  const payload = await verifyTokenFromRequest(req);
-  if (!payload) {
-    return NextResponse.json(
-      { error: "UNAUTHORIZED", message: "กรุณาเข้าสู่ระบบ" },
-      { status: 401 }
-    );
-  }
+  // requireAuth — recomputeRecommendations inserts rows with the token's
+  // userId; a stale JWT would trip their FK.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.error;
 
-  const created = await recomputeRecommendations(payload.sub);
-  const recommendations = await getRecommendations(payload.sub);
+  const created = await recomputeRecommendations(auth.userId);
+  const recommendations = await getRecommendations(auth.userId);
   return NextResponse.json({ created, recommendations });
 }
