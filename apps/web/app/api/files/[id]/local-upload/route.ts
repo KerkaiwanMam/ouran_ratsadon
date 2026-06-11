@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import { resolveLocalStoragePath } from "@/lib/file-storage";
 
@@ -11,17 +11,14 @@ import { resolveLocalStoragePath } from "@/lib/file-storage";
 // they're written to the local uploads/ dir under the storageKey assigned by
 // /api/files/presign. Never used when R2 env vars are set.
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const payload = await getCurrentUser();
-  if (!payload) {
-    return NextResponse.json(
-      { error: "UNAUTHORIZED", message: "กรุณาเข้าสู่ระบบ" },
-      { status: 401 }
-    );
-  }
+  // requireAuth for parity with the rest of the upload flow (presign/confirm):
+  // stale-JWT and banned users are rejected before any bytes hit the disk.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.error;
 
   const { id } = await params;
   const fileRecord = await prisma.file.findUnique({ where: { id } });
-  if (!fileRecord || fileRecord.userId !== payload.sub) {
+  if (!fileRecord || fileRecord.userId !== auth.userId) {
     return NextResponse.json(
       { error: "NOT_FOUND", message: "ไม่พบไฟล์" },
       { status: 404 }
@@ -34,7 +31,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     );
   }
 
-  const sub = await prisma.subscription.findUnique({ where: { userId: payload.sub } });
+  const sub = await prisma.subscription.findUnique({ where: { userId: auth.userId } });
   const maxSize = !sub || sub.plan === "FREE" ? 10 * 1024 * 1024 : 50 * 1024 * 1024;
 
   // Pre-upload validation: reject oversized requests via Content-Length BEFORE
