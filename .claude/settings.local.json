@@ -50,7 +50,19 @@
       "Bash(curl -s -i -b cookies.txt -X PUT http://localhost:3000/api/files/cmq8dsj5n0001101q7gu6tdjw/local-upload -H 'Content-Type: application/octet-stream' --data-binary @test-upload.xlsx)",
       "Bash(curl -s -i -b cookies.txt -X POST http://localhost:3000/api/files/cmq8dsj5n0001101q7gu6tdjw/confirm)",
       "PowerShell($envLine = \\(Get-Content \"C:\\\\Users\\\\Mam23\\\\OneDrive\\\\เอกสาร\\\\GitHub\\\\ouran_ratsadon\\\\apps\\\\web\\\\.env.local\" | Select-String '^DATABASE_URL='\\).Line; $env:DATABASE_URL = $envLine.Substring\\(13\\).Trim\\('\"'\\); node \"repro-rating.js\")",
-      "PowerShell(python \"C:\\\\Users\\\\Mam23\\\\OneDrive\\\\�͡���\\\\GitHub\\\\ouran_ratsadon\\\\.claude\\\\worktrees\\\\inspiring-khorana-d3ed94\\\\.claude\\\\skills\\\\ui-ux-pro-max\\\\scripts\\\\search.py\" \"civic government budget transparency platform fintech modern trustworthy\" --design-system -p \"Ouran Ratsadon\")"
+      "PowerShell(python \"C:\\\\Users\\\\Mam23\\\\OneDrive\\\\�͡���\\\\GitHub\\\\ouran_ratsadon\\\\.claude\\\\worktrees\\\\inspiring-khorana-d3ed94\\\\.claude\\\\skills\\\\ui-ux-pro-max\\\\scripts\\\\search.py\" \"civic government budget transparency platform fintech modern trustworthy\" --design-system -p \"Ouran Ratsadon\")",
+      "Bash(curl -s -o /dev/null -w \"http_code=%{http_code}\\\\n\" http://localhost:3000 --max-time 5)",
+      "Bash(grep -n \"datasource\\\\|directUrl\\\\|url\\\\s*=\\\\|connection_limit\\\\|pool_timeout\\\\|pgbouncer\" ../../prisma/schema.prisma lib/db.ts)",
+      "Bash(python3 -c ' *)",
+      "Bash(node -e ' *)",
+      "Bash(tail -100 /tmp/devserver.log 2>/dev/null | grep -n \"Ready\\\\|prisma:error\\\\|GET /api/civic\" )",
+      "Bash(curl -s -o /dev/null -w \"warm request: %{http_code} in %{time_total}s\\\\n\" \"http://localhost:3000/api/civic/years\")",
+      "Bash(echo \"---exit=$?\")",
+      "Bash(py -3 -m pip --version)",
+      "Bash(py -3 -m pip show uvicorn fastapi)",
+      "Bash(py -3 -c \"import site; print\\(site.USER_BASE\\)\")",
+      "Bash(py -3 -m pip list)",
+      "Bash(timeout 8 py -3 -m uvicorn main:app --reload --port 8000)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Mam23\\OneDrive\\เอกสาร\\GitHub\\ouran_ratsadon\\apps\\web",

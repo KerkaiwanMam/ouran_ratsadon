@@ -7,7 +7,7 @@
     "build": "npm run build --workspace=apps/web",
     "start": "npm run start --workspace=apps/web",
     "lint": "npm run lint --workspace=apps/web",
-    "parser": "cd apps/parser && uvicorn main:app --reload --port 8000"
+    "parser": "cd apps/parser && py -3 -m uvicorn main:app --reload --port 8000"
   },
   "workspaces": [
     "apps/web"
