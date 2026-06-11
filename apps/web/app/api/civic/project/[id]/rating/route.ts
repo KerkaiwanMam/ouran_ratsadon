@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 
 const VALID_VOTES = ["too_high", "appropriate", "too_low"] as const;
@@ -44,7 +44,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 // POST /api/civic/project/[id]/rating
 // Body: { vote: "too_high" | "appropriate" | "too_low" }
-// One vote per project per user (or per IP for guests).
+// Requires login — one vote per project per user. (Guest voting by IP was
+// removed; legacy guest rows are claimed on the voter's first logged-in vote.)
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: rawId } = await params;
   const projectId = decodeURIComponent(rawId);
@@ -59,40 +60,28 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     );
   }
 
-  const payload = await getCurrentUser();
+  // Voting requires an account — guests get 401 and the RatingWidget shows
+  // the login popup. requireAuth also confirms the user row still exists, so
+  // a stale JWT can't trip ProjectRating_userId_fkey (P2003).
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.error;
+
   const ipHash = hashIp(getClientIp(req));
 
   try {
-    // getCurrentUser() only verifies the JWT — the user row may have been
-    // deleted (e.g. DB reseed) since the cookie was issued. Using a stale sub
-    // would violate ProjectRating_userId_fkey (P2003), so confirm the user
-    // exists and otherwise fall back to a guest vote.
-    const user = payload
-      ? await prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true } })
-      : null;
-
-    if (user) {
-      // ipHash is intentionally NOT stored on authenticated rows:
-      // @@unique([projectId, ipHash]) is the guest dedup key, and writing the
-      // (shared) IP here would make a logged-in vote collide (P2002) with any
-      // guest vote from the same IP. The deleteMany claims this IP's earlier
-      // guest vote — same person voting again after login shouldn't count twice.
-      await prisma.$transaction([
-        prisma.projectRating.deleteMany({ where: { projectId, ipHash, userId: null } }),
-        prisma.projectRating.upsert({
-          where: { projectId_userId: { projectId, userId: user.id } },
-          create: { projectId, userId: user.id, vote },
-          update: { vote },
-        }),
-      ]);
-    } else {
-      // Guest: upsert by ipHash
-      await prisma.projectRating.upsert({
-        where: { projectId_ipHash: { projectId, ipHash } },
-        create: { projectId, vote, ipHash },
+    // ipHash is intentionally NOT stored on authenticated rows:
+    // @@unique([projectId, ipHash]) was the guest-era dedup key, and writing
+    // the (shared) IP here would make a logged-in vote collide (P2002) with a
+    // legacy guest row from the same IP. The deleteMany claims this IP's old
+    // guest vote — same person voting again after login shouldn't count twice.
+    await prisma.$transaction([
+      prisma.projectRating.deleteMany({ where: { projectId, ipHash, userId: null } }),
+      prisma.projectRating.upsert({
+        where: { projectId_userId: { projectId, userId: auth.userId } },
+        create: { projectId, userId: auth.userId, vote },
         update: { vote },
-      });
-    }
+      }),
+    ]);
   } catch (err) {
     console.error("[civic rating] vote upsert failed:", err);
     return NextResponse.json(

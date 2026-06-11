@@ -19,6 +19,12 @@ export async function GET(req: NextRequest) {
   // CSRF state token
   const state = crypto.randomBytes(16).toString("hex");
 
+  // Optional post-login destination (from /login?next=…) — same-site relative
+  // paths only, carried through the OAuth round-trip in a short-lived cookie.
+  const rawNext = req.nextUrl.searchParams.get("next");
+  const nextPath =
+    rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
+
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
     redirect_uri: REDIRECT_URI,
@@ -37,6 +43,15 @@ export async function GET(req: NextRequest) {
     maxAge: 60 * 10, // 10 minutes
     path: "/",
   });
+  if (nextPath) {
+    cookieStore.set("oauth_next", nextPath, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 10,
+      path: "/",
+    });
+  }
 
   return NextResponse.redirect(
     `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
