@@ -106,13 +106,16 @@ export async function finalizeFileUpload(
   // user has already imported (across ALL their files, not just this one —
   // catches "re-uploaded a wider export that overlaps an old one").
   const occurrenceCount: Record<string, number> = {};
-  const fingerprinted = transactions.map((tx) => {
+  // Attach each row's leak result HERE, while indices still line up with the
+  // original transactions array — after the duplicate filter below, positional
+  // indices no longer match leakResults and flags would land on wrong rows.
+  const fingerprinted = transactions.map((tx, originalIndex) => {
     const day = tx.date.toISOString().slice(0, 10);
     const dedupKey = `${day}|${tx.description.trim().toLowerCase()}|${tx.transactionType}`;
     const occurrence = occurrenceCount[dedupKey] ?? 0;
     occurrenceCount[dedupKey] = occurrence + 1;
     const { rowHash, softKey } = fingerprintRow(userId, tx, occurrence);
-    return { tx, rowHash, softKey };
+    return { tx, rowHash, softKey, leak: leakResults[originalIndex] };
   });
 
   const allHashes = fingerprinted.map((f) => f.rowHash);
@@ -144,9 +147,8 @@ export async function finalizeFileUpload(
       }
       return true;
     })
-    .map(({ tx, rowHash, softKey }, i) => {
+    .map(({ tx, rowHash, softKey, leak }) => {
       const { category, autoCategorized } = categorize(tx.description);
-      const leak = leakResults[i];
 
       // Same date+description+type as something we already have, but the
       // amount/category differs → likely a corrected re-export. Insert it
@@ -197,7 +199,9 @@ export async function finalizeFileUpload(
   const expenses = txData.filter((t) => t.transactionType === "EXPENSE");
   const totalIncome = incomes.reduce((s, t) => s + t.amount, 0);
   const totalExpense = expenses.reduce((s, t) => s + Math.abs(t.amount), 0);
-  const dates = txData.map((t) => t.date).sort();
+  // Explicit comparator — default sort stringifies Dates ("Fri…" < "Mon…"),
+  // which is alphabetical by weekday name, not chronological.
+  const dates = txData.map((t) => t.date).sort((a, b) => a.getTime() - b.getTime());
 
   await prisma.file.update({
     where: { id: fileRecord.id },

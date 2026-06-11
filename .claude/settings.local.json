@@ -48,7 +48,9 @@
       "Bash(curl -s -i -b cookies.txt -X POST http://localhost:3000/api/files/presign -H 'Content-Type: application/json' -d '{\"filename\":\"test-upload.xlsx\",\"fileSize\":12345,\"contentType\":\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\",\"source_format\":\"EXCEL_TEMPLATE\"}')",
       "Bash(head -c 2048 /dev/urandom)",
       "Bash(curl -s -i -b cookies.txt -X PUT http://localhost:3000/api/files/cmq8dsj5n0001101q7gu6tdjw/local-upload -H 'Content-Type: application/octet-stream' --data-binary @test-upload.xlsx)",
-      "Bash(curl -s -i -b cookies.txt -X POST http://localhost:3000/api/files/cmq8dsj5n0001101q7gu6tdjw/confirm)"
+      "Bash(curl -s -i -b cookies.txt -X POST http://localhost:3000/api/files/cmq8dsj5n0001101q7gu6tdjw/confirm)",
+      "PowerShell($envLine = \\(Get-Content \"C:\\\\Users\\\\Mam23\\\\OneDrive\\\\เอกสาร\\\\GitHub\\\\ouran_ratsadon\\\\apps\\\\web\\\\.env.local\" | Select-String '^DATABASE_URL='\\).Line; $env:DATABASE_URL = $envLine.Substring\\(13\\).Trim\\('\"'\\); node \"repro-rating.js\")",
+      "PowerShell(python \"C:\\\\Users\\\\Mam23\\\\OneDrive\\\\�͡���\\\\GitHub\\\\ouran_ratsadon\\\\.claude\\\\worktrees\\\\inspiring-khorana-d3ed94\\\\.claude\\\\skills\\\\ui-ux-pro-max\\\\scripts\\\\search.py\" \"civic government budget transparency platform fintech modern trustworthy\" --design-system -p \"Ouran Ratsadon\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\Mam23\\OneDrive\\เอกสาร\\GitHub\\ouran_ratsadon\\apps\\web",

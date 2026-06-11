@@ -39,10 +39,16 @@ function makeLimiter(tokens: number, prefix: string): Ratelimit | null {
   });
 }
 
-const LIMITERS: { prefix: string; limit: number; limiter: Ratelimit | null }[] = [
-  { prefix: "/api/files/upload", limit: 5,  limiter: makeLimiter(5, "upload") },
-  { prefix: "/api/auth",         limit: 10, limiter: makeLimiter(10, "auth") },
-  { prefix: "/api/",             limit: 60, limiter: makeLimiter(60, "api") },
+// Paths in the Phase 3A presign flow (/api/files/presign, /api/files/[id]/
+// local-upload, /api/files/[id]/confirm) must hit the same strict upload tier
+// as the legacy direct-upload route — they trigger the same expensive
+// storage + parse pipeline. GET /api/files (list) stays on the general tier.
+const UPLOAD_PATH_RE = /^\/api\/files\/(upload$|presign$|[^/]+\/(local-upload|confirm)$)/;
+
+const LIMITERS: { matches: (pathname: string) => boolean; limit: number; limiter: Ratelimit | null }[] = [
+  { matches: (p) => UPLOAD_PATH_RE.test(p),    limit: 5,  limiter: makeLimiter(5, "upload") },
+  { matches: (p) => p.startsWith("/api/auth"), limit: 10, limiter: makeLimiter(10, "auth") },
+  { matches: (p) => p.startsWith("/api/"),     limit: 60, limiter: makeLimiter(60, "api") },
 ];
 
 let warnedMissingUpstash = false;
@@ -58,7 +64,7 @@ function getClientIp(req: NextRequest): string {
 type RateResult = { blocked: false } | { blocked: true; limit: number; retryAfterSec: number };
 
 async function checkRateLimit(ip: string, pathname: string): Promise<RateResult> {
-  const rule = LIMITERS.find((r) => pathname.startsWith(r.prefix));
+  const rule = LIMITERS.find((r) => r.matches(pathname));
   if (!rule) return { blocked: false }; // no rule → pass
 
   if (!rule.limiter) {

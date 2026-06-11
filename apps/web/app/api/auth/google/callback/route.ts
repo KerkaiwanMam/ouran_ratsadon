@@ -122,7 +122,16 @@ export async function GET(req: NextRequest) {
     const token = await signToken({ sub: user.id, email: user.email, role: user.role });
     const cookie = makeAuthCookie(token);
 
-    const res = NextResponse.redirect(`${APP_URL}/dashboard`);
+    // Return to the page that required login (set by /api/auth/google from
+    // /login?next=…) — relative paths only, validated again here.
+    const savedNext = cookieStore.get("oauth_next")?.value;
+    cookieStore.delete("oauth_next");
+    const dest =
+      savedNext && savedNext.startsWith("/") && !savedNext.startsWith("//")
+        ? savedNext
+        : "/dashboard";
+
+    const res = NextResponse.redirect(`${APP_URL}${dest}`);
     res.cookies.set(cookie);
     return res;
   } catch (err) {

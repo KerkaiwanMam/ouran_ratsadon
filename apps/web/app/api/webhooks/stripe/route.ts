@@ -4,8 +4,6 @@ import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/db";
 import type Stripe from "stripe";
 
-export const config = { api: { bodyParser: false } };
-
 // POST /api/webhooks/stripe
 // Stripe sends events here. Must verify signature using STRIPE_WEBHOOK_SECRET.
 export async function POST(req: NextRequest) {

@@ -2,9 +2,20 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? "dev-secret-change-in-production"
-);
+// Resolved lazily (not at module load) so `next build` doesn't require the env
+// var. In production, refusing to fall back means tokens can never be signed or
+// verified with the publicly-known dev secret: sign fails loudly, verify fails
+// closed (returns null).
+function getJwtSecret(): Uint8Array {
+  const raw = process.env.JWT_SECRET;
+  if (!raw) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("JWT_SECRET env var must be set in production");
+    }
+    return new TextEncoder().encode("dev-secret-change-in-production");
+  }
+  return new TextEncoder().encode(raw);
+}
 
 const COOKIE_NAME = "auth_token";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -22,12 +33,12 @@ export async function signToken(payload: Omit<JWTPayload, "iat" | "exp">): Promi
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(JWT_SECRET);
+    .sign(getJwtSecret());
 }
 
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, getJwtSecret());
     return payload as unknown as JWTPayload;
   } catch {
     return null;

@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { ThumbsUp, ThumbsDown, Minus, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import LoginRequiredModal from "@/components/shared/LoginRequiredModal";
 
 type Vote = "too_high" | "appropriate" | "too_low";
 
@@ -28,6 +31,12 @@ interface Props {
 export default function RatingWidget({ projectId }: Props) {
   const [myVote, setMyVote] = useState<Vote | null>(null);
   const [voting, setVoting] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  // Preserve the query string (e.g. ?year=2569) so login returns to the same view.
+  const nextPath = searchParams.size > 0 ? `${pathname}?${searchParams.toString()}` : pathname;
 
   const { data, mutate } = useSWR<RatingResponse>(
     `/api/civic/project/${projectId}/rating`,
@@ -36,6 +45,12 @@ export default function RatingWidget({ projectId }: Props) {
 
   async function handleVote(vote: Vote) {
     if (voting) return;
+    // Voting requires an account — guests get the login popup instead of a
+    // silent failure (the API also rejects guests with 401 as the backstop).
+    if (!authLoading && !isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
     setVoting(true);
     try {
       const res = await fetch(`/api/civic/project/${projectId}/rating`, {
@@ -43,6 +58,11 @@ export default function RatingWidget({ projectId }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ vote }),
       });
+      if (res.status === 401) {
+        // Session expired mid-page (or stale cookie) — same popup.
+        setShowLoginModal(true);
+        return;
+      }
       if (res.ok) {
         const updated = await res.json();
         setMyVote(vote);
@@ -128,6 +148,13 @@ export default function RatingWidget({ projectId }: Props) {
           ยังไม่มีการโหวต — เป็นคนแรกที่แสดงความเห็น
         </p>
       )}
+
+      <LoginRequiredModal
+        open={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        nextPath={nextPath}
+        message="กรุณาเข้าสู่ระบบก่อนให้คะแนนโครงการ — สมัครฟรี ใช้เวลาไม่ถึงนาที"
+      />
     </div>
   );
 }

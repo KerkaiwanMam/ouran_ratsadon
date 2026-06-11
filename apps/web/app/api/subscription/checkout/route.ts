@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyTokenFromRequest } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import { stripe, getPriceId, type PlanKey, type BillingCycle } from "@/lib/stripe";
 
@@ -7,13 +7,10 @@ import { stripe, getPriceId, type PlanKey, type BillingCycle } from "@/lib/strip
 // Body: { plan: "PRO" | "TEAM", billing: "monthly" | "yearly" }
 // Returns: { checkout_url: string }
 export async function POST(req: NextRequest) {
-  const payload = await verifyTokenFromRequest(req);
-  if (!payload) {
-    return NextResponse.json(
-      { error: "UNAUTHORIZED", message: "กรุณาเข้าสู่ระบบ" },
-      { status: 401 }
-    );
-  }
+  // requireAuth — the mock (no-Stripe) flow upserts a Subscription with the
+  // token's userId before any user lookup; a stale JWT would trip its FK.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.error;
 
   const body = await req.json().catch(() => null);
   const plan = body?.plan as PlanKey;
@@ -38,9 +35,9 @@ export async function POST(req: NextRequest) {
     const trialEnd = new Date();
     trialEnd.setDate(trialEnd.getDate() + 14);
     await prisma.subscription.upsert({
-      where: { userId: payload.sub },
+      where: { userId: auth.userId },
       create: {
-        userId: payload.sub,
+        userId: auth.userId,
         plan,
         status: "TRIAL",
         billingCycle,
@@ -60,7 +57,7 @@ export async function POST(req: NextRequest) {
 
   // Real Stripe checkout
   const user = await prisma.user.findUnique({
-    where: { id: payload.sub },
+    where: { id: auth.userId },
     select: { email: true, name: true },
   });
   if (!user) {
@@ -70,7 +67,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const sub = await prisma.subscription.findUnique({ where: { userId: payload.sub } });
+  const sub = await prisma.subscription.findUnique({ where: { userId: auth.userId } });
 
   // Get or create Stripe customer
   let customerId = sub?.stripeCustomerId ?? undefined;
@@ -78,7 +75,7 @@ export async function POST(req: NextRequest) {
     const customer = await stripe.customers.create({
       email: user.email,
       name: user.name,
-      metadata: { userId: payload.sub },
+      metadata: { userId: auth.userId },
     });
     customerId = customer.id;
   }
@@ -98,19 +95,19 @@ export async function POST(req: NextRequest) {
     line_items: [{ price: priceId, quantity: 1 }],
     subscription_data: {
       trial_period_days: 14,
-      metadata: { userId: payload.sub, plan },
+      metadata: { userId: auth.userId, plan },
     },
     success_url: successUrl,
     cancel_url: cancelUrl,
-    metadata: { userId: payload.sub, plan, billing },
+    metadata: { userId: auth.userId, plan, billing },
     locale: "th",
   });
 
   // Store session ID so webhook can look up the user
   await prisma.subscription.upsert({
-    where: { userId: payload.sub },
+    where: { userId: auth.userId },
     create: {
-      userId: payload.sub,
+      userId: auth.userId,
       plan: "FREE",
       status: "ACTIVE",
       stripeCustomerId: customerId,
