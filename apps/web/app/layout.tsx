@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
-import { Noto_Sans_Thai } from "next/font/google";
+import { Noto_Sans_Thai, Inter } from "next/font/google";
 import "./globals.css";
 
 const notoSansThai = Noto_Sans_Thai({
   subsets: ["thai", "latin"],
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-noto-sans-thai",
+  display: "swap",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-inter",
   display: "swap",
 });
 
@@ -29,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="th" className={notoSansThai.variable} data-scroll-behavior="smooth">
+    <html lang="th" className={`${notoSansThai.variable} ${inter.variable}`} data-scroll-behavior="smooth">
       <body className={`antialiased font-sans ${notoSansThai.className}`}>
         {children}
       </body>
