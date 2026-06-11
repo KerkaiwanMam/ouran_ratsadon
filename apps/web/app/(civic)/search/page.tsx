@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import Link from "next/link";
@@ -34,6 +34,15 @@ const BUDGET_TYPE_COLORS: Record<string, string> = {
 };
 
 export default function SearchPage() {
+  // useSearchParams() requires a Suspense boundary for static prerendering
+  return (
+    <Suspense fallback={null}>
+      <SearchPageContent />
+    </Suspense>
+  );
+}
+
+function SearchPageContent() {
   // Read initial values from URL so links like /search?year=2569&q=... work
   const urlParams = useSearchParams();
 
