@@ -116,10 +116,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
   }
 
-  await prisma.file.update({
-    where: { id: fileRecord.id },
+  // Atomic claim: only the request that flips UPLOADING → PROCESSING proceeds.
+  // The status check at the top is not enough — two concurrent confirms could
+  // both pass it and double-insert transactions. updateMany with the status in
+  // the WHERE makes the transition itself the lock.
+  const claimed = await prisma.file.updateMany({
+    where: { id: fileRecord.id, status: "UPLOADING" },
     data: { status: "PROCESSING", fileHash },
   });
+  if (claimed.count === 0) {
+    return NextResponse.json(
+      { error: "INVALID_STATE", message: "ไฟล์นี้ถูกประมวลผลไปแล้ว" },
+      { status: 409 }
+    );
+  }
 
   // For Phase 0, parse is simulated — generate mock transactions from the file
   // In production this would call the Python parser microservice

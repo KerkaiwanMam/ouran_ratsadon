@@ -3,6 +3,7 @@ import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { resolveLocalStoragePath } from "@/lib/file-storage";
 
 // ─── PUT /api/files/[id]/local-upload ────────────────────────────────────────
 // Dev-only fallback for the presign flow when R2 is not configured: the
@@ -36,6 +37,20 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const sub = await prisma.subscription.findUnique({ where: { userId: payload.sub } });
   const maxSize = !sub || sub.plan === "FREE" ? 10 * 1024 * 1024 : 50 * 1024 * 1024;
 
+  // Pre-upload validation: reject oversized requests via Content-Length BEFORE
+  // reading the body into memory — same guard as the legacy upload route
+  // (see "Pre-upload validation" in CLAUDE.md security status).
+  const contentLength = parseInt(req.headers.get("content-length") ?? "0", 10);
+  if (contentLength > maxSize) {
+    return NextResponse.json(
+      {
+        error: "FILE_TOO_LARGE",
+        message: `ไฟล์มีขนาดเกิน ${!sub || sub.plan === "FREE" ? "10" : "50"} MB`,
+      },
+      { status: 413 }
+    );
+  }
+
   const bytes = await req.arrayBuffer();
   if (bytes.byteLength === 0) {
     return NextResponse.json(
@@ -53,8 +68,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     );
   }
 
-  const uploadsDir = path.join(process.cwd(), "uploads");
-  const filePath = path.join(uploadsDir, fileRecord.storageKey);
+  // resolveLocalStoragePath rejects any key that escapes uploads/ —
+  // storageKey is server-generated, this is defense-in-depth.
+  const filePath = resolveLocalStoragePath(fileRecord.storageKey);
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, Buffer.from(bytes));
 

@@ -38,8 +38,10 @@ export async function POST(req: NextRequest) {
     const monthStart = new Date();
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
+    // ERROR files don't count — a failed/abandoned upload shouldn't burn the
+    // user's monthly quota (orphan-cleaner marks stale UPLOADING rows ERROR).
     const count = await prisma.file.count({
-      where: { userId: payload.sub, uploadedAt: { gte: monthStart } },
+      where: { userId: payload.sub, uploadedAt: { gte: monthStart }, status: { not: "ERROR" } },
     });
     if (count >= 3) {
       return NextResponse.json(
@@ -168,10 +170,13 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Save to disk
+  // Save to disk. Sanitize the client-controlled filename before it becomes
+  // part of a filesystem path — a crafted name like "a/../../evil.csv" would
+  // otherwise escape uploads/ via path.join (same rule as the presign route).
   const uploadsDir = path.join(process.cwd(), "uploads");
   await mkdir(uploadsDir, { recursive: true });
-  const storageKey = `${Date.now()}-${file.name}`;
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const storageKey = `${Date.now()}-${safeName}`;
   const filePath = path.join(uploadsDir, storageKey);
   await writeFile(filePath, buffer);
 

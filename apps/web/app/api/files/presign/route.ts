@@ -45,8 +45,10 @@ export async function POST(req: NextRequest) {
     const monthStart = new Date();
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
+    // ERROR files don't count — a failed/abandoned upload shouldn't burn the
+    // user's monthly quota (orphan-cleaner marks stale UPLOADING rows ERROR).
     const count = await prisma.file.count({
-      where: { userId: payload.sub, uploadedAt: { gte: monthStart } },
+      where: { userId: payload.sub, uploadedAt: { gte: monthStart }, status: { not: "ERROR" } },
     });
     if (count >= 3) {
       return NextResponse.json(
@@ -103,10 +105,16 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  // Only accept the client's contentType if it's in the allowlist for this
+  // extension — it gets baked into the presigned policy and stored on the R2
+  // object, so an arbitrary value (e.g. text/html) must not pass through.
+  const allowedTypes = ALLOWED_EXTENSIONS[ext] ?? [];
+  const claimedType =
+    typeof contentType === "string" ? contentType.split(";")[0].trim() : null;
   const resolvedContentType =
-    contentType && typeof contentType === "string"
-      ? contentType
-      : ALLOWED_EXTENSIONS[ext]?.[0] ?? "application/octet-stream";
+    claimedType && allowedTypes.includes(claimedType)
+      ? claimedType
+      : allowedTypes[0] ?? "application/octet-stream";
 
   if (hasR2) {
     const presigned = await createPresignedUploadPost({
