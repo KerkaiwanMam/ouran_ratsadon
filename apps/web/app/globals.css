@@ -1,6 +1,17 @@
 @import "tailwindcss";
 
+/* Dark mode is user-toggled (ThemeToggle component sets/removes this class
+   on <html>), not purely OS-driven — so Tailwind's `dark:` variant must key
+   off the .dark class rather than prefers-color-scheme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
+  /* Tell the browser this page supports both schemes so native controls
+     (select/option dropdowns, scrollbars, etc.) render with readable
+     background/text colors matching the OS theme instead of defaulting
+     to light-on-light or light-text-on-white-popup. */
+  color-scheme: light dark;
+
   --background: #ffffff;
   --foreground: #171717;
   --primary: #7F77DD;
@@ -85,41 +96,42 @@
   --gradient-accent: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 55%, #ec4899 100%);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --surface: #0f172a;
-    --surface-muted: #020617;
-    --border-subtle: #1e293b;
-    --accent-soft: #2a2750;
-    --accent-2-soft: #221f45;
-  }
+/* Dark mode overrides — applied via the .dark class on <html>, toggled by
+   ThemeToggle (components/shared/ThemeToggle.tsx) and set on first paint by
+   the inline script in app/layout.tsx (resolves "system" via matchMedia). */
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --surface: #0f172a;
+  --surface-muted: #020617;
+  --border-subtle: #1e293b;
+  --accent-soft: #2a2750;
+  --accent-2-soft: #221f45;
+}
 
-  [data-theme="civic"] {
-    --accent: #fbbf24;               /* amber-400 on dark */
-    --accent-vivid: #f59e0b;
-    --accent-soft: rgba(251, 191, 36, 0.12);
-    --accent-2: #2dd4bf;             /* teal-400 on dark */
-    --accent-2-soft: rgba(45, 212, 191, 0.12);
-    --accent-3: #fcd34d;
-    --grid-line: rgba(45, 212, 191, 0.06);
-    --grid-line-major: rgba(45, 212, 191, 0.11);
-    --gradient-accent: linear-gradient(135deg, #fbbf24, #2dd4bf);
-  }
+.dark [data-theme="civic"] {
+  --accent: #fbbf24;               /* amber-400 on dark */
+  --accent-vivid: #f59e0b;
+  --accent-soft: rgba(251, 191, 36, 0.12);
+  --accent-2: #2dd4bf;             /* teal-400 on dark */
+  --accent-2-soft: rgba(45, 212, 191, 0.12);
+  --accent-3: #fcd34d;
+  --grid-line: rgba(45, 212, 191, 0.06);
+  --grid-line-major: rgba(45, 212, 191, 0.11);
+  --gradient-accent: linear-gradient(135deg, #fbbf24, #2dd4bf);
+}
 
-  [data-theme="business"] {
-    --accent: #22d3ee;               /* cyan-400 on dark */
-    --accent-vivid: #06b6d4;
-    --accent-soft: rgba(34, 211, 238, 0.12);
-    --accent-2: #a78bfa;             /* violet-400 */
-    --accent-2-soft: rgba(167, 139, 250, 0.12);
-    --accent-3: #f472b6;             /* pink-400 */
-    --glass-bg: rgba(15, 23, 42, 0.65);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --glass-blur: 14px;
-    --gradient-accent: linear-gradient(135deg, #22d3ee 0%, #a78bfa 55%, #f472b6 100%);
-  }
+.dark [data-theme="business"] {
+  --accent: #22d3ee;               /* cyan-400 on dark */
+  --accent-vivid: #06b6d4;
+  --accent-soft: rgba(34, 211, 238, 0.12);
+  --accent-2: #a78bfa;             /* violet-400 */
+  --accent-2-soft: rgba(167, 139, 250, 0.12);
+  --accent-3: #f472b6;             /* pink-400 */
+  --glass-bg: rgba(15, 23, 42, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: 14px;
+  --gradient-accent: linear-gradient(135deg, #22d3ee 0%, #a78bfa 55%, #f472b6 100%);
 }
 
 /* ---- Mode-specific surface utilities ---- */
@@ -165,6 +177,7 @@ html {
   }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }
@@ -189,3 +202,180 @@ body {
 }
 .modal-backdrop-in { animation: modal-fade-in 200ms ease-out; }
 .modal-card-in     { animation: modal-pop-in 220ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* ---- Entrance & scroll-reveal system ----
+   .hero-enter  : plays on page load, stagger via --enter-delay (CSS only).
+   .reveal      : hidden until <Reveal> adds .reveal-in on viewport entry.
+   Hidden initial states are gated behind BOTH the .js class (set by the
+   inline script in the root layout) and prefers-reduced-motion:
+   no-preference — so no-JS visitors and reduced-motion users always see
+   content, never a blank section. transform/opacity only (no layout). */
+@keyframes rise-fade {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-enter {
+    animation: rise-fade 640ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--enter-delay, 0ms);
+  }
+  .js .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  .js .reveal.reveal-in {
+    animation: rise-fade 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--reveal-delay, 0ms);
+  }
+}
+
+/* ---- CityScape ambient animations (cs-*) ----
+   All transform/opacity only. The reduced-motion kill-switch above
+   (duration 0.01ms + iteration-count 1) freezes the scene to a static
+   skyline. SVG groups animate with transform-box: fill-box so rotation/
+   translation is relative to each element, not the whole canvas. */
+@keyframes cs-flicker {
+  0%, 100% { opacity: 1; }
+  42% { opacity: 0.3; }
+  50% { opacity: 0.9; }
+  68% { opacity: 0.45; }
+}
+@keyframes cs-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+@keyframes cs-pulse {
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 0.3; }
+}
+@keyframes cs-sway {
+  from { transform: rotate(-1.4deg); }
+  to   { transform: rotate(1.4deg); }
+}
+@keyframes cs-drift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-96px); }
+}
+@keyframes cs-walk {
+  0%   { transform: translateX(0); opacity: 0; }
+  6%   { opacity: 1; }
+  94%  { opacity: 1; }
+  100% { transform: translateX(var(--cs-walk-dist, 240px)); opacity: 0; }
+}
+@keyframes cs-drive {
+  0%   { transform: translateX(-180px); opacity: 0; }
+  4%   { opacity: 1; }
+  96%  { opacity: 1; }
+  100% { transform: translateX(1620px); opacity: 0; }
+}
+@keyframes cs-drive-rev {
+  0%   { transform: translateX(1620px); opacity: 0; }
+  4%   { opacity: 1; }
+  96%  { opacity: 1; }
+  100% { transform: translateX(-180px); opacity: 0; }
+}
+@keyframes cs-rise {
+  0%   { transform: translateY(0); opacity: 0; }
+  12%  { opacity: 0.9; }
+  100% { transform: translateY(-110px); opacity: 0; }
+}
+@keyframes cs-shimmer-l {
+  from { transform: translateX(0); }
+  to   { transform: translateX(120px); }
+}
+@keyframes cs-shimmer-r {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-90px); }
+}
+
+.cs-flicker-a, .cs-flicker-b, .cs-flicker-c,
+.cs-sway-a, .cs-sway-b,
+.cs-walk-a, .cs-walk-b, .cs-walk-c,
+.cs-drive-a, .cs-drive-b,
+.cs-rise-a, .cs-rise-b, .cs-rise-c, .cs-rise-d, .cs-rise-e {
+  transform-box: fill-box;
+}
+.cs-sway-a, .cs-sway-b { transform-origin: 50% 100%; }
+
+.cs-flicker-a { animation: cs-flicker 4.2s ease-in-out infinite; }
+.cs-flicker-b { animation: cs-flicker 5.6s ease-in-out 1.2s infinite; }
+.cs-flicker-c { animation: cs-flicker 6.8s ease-in-out 2.6s infinite; }
+.cs-blink     { animation: cs-blink 2.4s steps(1) infinite; }
+.cs-blink-b   { animation: cs-blink 3.1s steps(1) 0.9s infinite; }
+.cs-pulse-a   { animation: cs-pulse 3.8s ease-in-out infinite; }
+.cs-pulse-b   { animation: cs-pulse 4.6s ease-in-out 1.4s infinite; }
+.cs-sway-a    { animation: cs-sway 5.5s ease-in-out infinite alternate; }
+.cs-sway-b    { animation: cs-sway 7s ease-in-out 1s infinite alternate; }
+.cs-drift     { animation: cs-drift 2.8s linear infinite; }
+.cs-walk-a    { animation: cs-walk 22s linear infinite; }
+.cs-walk-b    { --cs-walk-dist: -260px; animation: cs-walk 26s linear 4s infinite; }
+.cs-walk-c    { animation: cs-walk 19s linear 9s infinite; }
+.cs-drive-a   { animation: cs-drive 13s linear infinite; }
+.cs-drive-b   { animation: cs-drive-rev 17s linear 5s infinite; }
+.cs-rise-a    { animation: cs-rise 6.5s ease-out infinite; }
+.cs-rise-b    { animation: cs-rise 7.5s ease-out 1.6s infinite; }
+.cs-rise-c    { animation: cs-rise 6s ease-out 3.2s infinite; }
+.cs-rise-d    { animation: cs-rise 8s ease-out 4.4s infinite; }
+.cs-rise-e    { animation: cs-rise 7s ease-out 5.6s infinite; }
+.cs-shimmer-a { animation: cs-shimmer-l 9s ease-in-out infinite alternate; }
+.cs-shimmer-b { animation: cs-shimmer-r 12s ease-in-out infinite alternate; }
+
+/* ---- SkyTrain scene (st-*) ----
+   Near train decelerates into the central station, dwells ~2.5s, then
+   accelerates away. Far train passes nonstop the opposite way on a 13s
+   loop (negative delay starts it mid-route so it never sits frozen).
+   18s vs 13s loops drift in phase, so the two trains keep crossing at
+   different spots — including right in front of the station. */
+@keyframes st-train-stop {
+  0%   { transform: translateX(-460px); animation-timing-function: cubic-bezier(0.3, 0, 0.3, 1); }
+  30%  { transform: translateX(810px); }
+  44%  { transform: translateX(810px); animation-timing-function: cubic-bezier(0.65, 0, 0.8, 0.5); }
+  100% { transform: translateX(1900px); }
+}
+@keyframes st-train-pass {
+  from { transform: translateX(1560px); }
+  to   { transform: translateX(-520px); }
+}
+.st-train-stop, .st-train-pass { transform-box: fill-box; }
+.st-train-stop { animation: st-train-stop 18s infinite; }
+.st-train-pass { animation: st-train-pass 13s linear -5s infinite; }
+
+/* ---- Marquee (ministry budget cards) ----
+   Track holds two copies of the card list; sliding -50% then looping is
+   seamless. Pauses on hover so cards stay clickable/readable. */
+@keyframes marquee-x {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-x 45s linear infinite;
+}
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track {
+  animation-play-state: paused;
+}
+
+/* ---- Floating decoration (hero stat chips) ---- */
+@keyframes float-y {
+  from { transform: translateY(-7px); }
+  to   { transform: translateY(7px); }
+}
+.float-a { animation: float-y 5s ease-in-out infinite alternate; }
+.float-b { animation: float-y 6.5s ease-in-out -2s infinite alternate; }
+.float-c { animation: float-y 5.8s ease-in-out -4s infinite alternate; }
+
+/* Cyberpunk scanline overlay — static (no animation), very low opacity */
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.02) 0 1px,
+    transparent 1px 3px
+  );
+}
