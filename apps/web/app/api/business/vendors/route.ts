@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search")?.trim().toLowerCase();
+  const sort = searchParams.get("sort") ?? "spend"; // spend | trend | frequency
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const pageSize = 20;
 
@@ -111,11 +112,32 @@ export async function GET(req: NextRequest) {
     vendors = vendors.filter((v) => v.name.toLowerCase().includes(search));
   }
 
-  vendors.sort((a, b) => b.totalSpent - a.totalSpent);
+  // Governed spend-concentration aggregate (Layer 1) — computed over the full
+  // filtered set before paging so the narrative's "top 3 = X%" is always
+  // correct regardless of which page/sort the client is viewing.
+  const grandTotal = vendors.reduce((s, v) => s + v.totalSpent, 0);
+  const top3 = [...vendors].sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 3);
+  const top3Spend = top3.reduce((s, v) => s + v.totalSpent, 0);
+  const summary = {
+    grandTotal: Math.round(grandTotal * 100) / 100,
+    top3Share: grandTotal > 0 ? Math.round((top3Spend / grandTotal) * 1000) / 10 : 0,
+    topVendorName: top3[0]?.name ?? null,
+    topVendorTrendPct: top3[0]?.trendPct ?? null,
+  };
+
+  // Ranking control: highest spend (default), fastest-rising trend, or most
+  // frequent. Nulls (no prior-month comparison) sort last under "trend".
+  if (sort === "trend") {
+    vendors.sort((a, b) => (b.trendPct ?? -Infinity) - (a.trendPct ?? -Infinity));
+  } else if (sort === "frequency") {
+    vendors.sort((a, b) => b.txCount - a.txCount);
+  } else {
+    vendors.sort((a, b) => b.totalSpent - a.totalSpent);
+  }
 
   const total = vendors.length;
   const pages = Math.ceil(total / pageSize) || 1;
   const paged = vendors.slice((page - 1) * pageSize, page * pageSize);
 
-  return NextResponse.json({ total, page, pageSize, pages, months, vendors: paged });
+  return NextResponse.json({ total, page, pageSize, pages, months, summary, vendors: paged });
 }

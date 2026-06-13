@@ -245,6 +245,32 @@ export default function AnalyticsPage() {
     : [];
   const maxCatExpense = topCategories[0]?.totalExpense ?? 1;
 
+  // Layer 3 — Narrative: interpret the focused month's breakdown in one or two
+  // plain-Thai sentences, derived from the governed summary (no LLM). Every
+  // claim gets a drill-down so the user can verify it on /transactions.
+  const focusMonthLabel = latest ? monthLabel(latest.month) : "";
+  const narrativeSentences: string[] = [];
+  let narrativeHref: string | undefined;
+  if (latest && topCategories.length > 0 && latest.totalExpense > 0) {
+    const top = topCategories[0];
+    const share = (top.totalExpense / latest.totalExpense) * 100;
+    const prevCat = previous?.byCategory.find((c) => c.category === top.category);
+    const prevShare =
+      previous && previous.totalExpense > 0 && prevCat
+        ? (prevCat.totalExpense / previous.totalExpense) * 100
+        : null;
+    let sentence = `หมวด “${top.category}” คิดเป็น ${share.toFixed(0)}% ของรายจ่ายเดือน${focusMonthLabel} (${formatCurrency(top.totalExpense)})`;
+    if (prevShare !== null && Math.abs(share - prevShare) >= 1) {
+      sentence +=
+        share > prevShare
+          ? ` เพิ่มจาก ${prevShare.toFixed(0)}% เดือนก่อน`
+          : ` ลดจาก ${prevShare.toFixed(0)}% เดือนก่อน`;
+    }
+    narrativeSentences.push(sentence);
+    narrativeHref = `/transactions?category=${encodeURIComponent(top.category)}&month=${latest.month}`;
+  }
+  if (insights[0]) narrativeSentences.push(insights[0].summary);
+
   async function handleRecAction(id: string, status: "APPLIED" | "DISMISSED") {
     await fetch(`/api/business/analytics/recommendations/${id}`, {
       method: "PATCH",
@@ -302,6 +328,39 @@ export default function AnalyticsPage() {
         </Panel>
       ) : (
         <>
+          {/* ── Layer 3: Narrative summary (above the numbers) ─────────────── */}
+          {narrativeSentences.length > 0 && (
+            <section
+              aria-label="สรุปเชิงลึก"
+              className="relative overflow-hidden surface-glass rounded-2xl px-5 py-4"
+            >
+              <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent" aria-hidden="true" />
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 shrink-0 text-accent">
+                  <Sparkles size={18} aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-accent mb-1">
+                    สรุปเชิงลึก
+                  </p>
+                  <div className="space-y-1 text-sm text-gray-700 dark:text-gray-200">
+                    {narrativeSentences.map((s, i) => (
+                      <p key={i}>{s}</p>
+                    ))}
+                  </div>
+                  {narrativeHref && (
+                    <Link
+                      href={narrativeHref}
+                      className="text-xs text-accent hover:underline mt-2 inline-block"
+                    >
+                      ดูข้อมูลจริง →
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* ── Overview KPI row ───────────────────────────────────────────── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="relative overflow-hidden surface-glass rounded-2xl px-4 py-4">

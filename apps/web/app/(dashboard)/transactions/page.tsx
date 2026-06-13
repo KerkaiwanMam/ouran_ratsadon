@@ -252,14 +252,14 @@ function TransactionsContent() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="ค้นหารายการ..."
-            className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7F77DD]/30"
+            className="w-full h-10 pl-8 pr-3 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7F77DD]/30"
           />
         </div>
 
         <select
           value={category}
           onChange={(e) => updateParams({ category: e.target.value || null, page: null })}
-          className="text-sm px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#7F77DD]/30 cursor-pointer"
+          className="h-10 text-sm px-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#7F77DD]/30 cursor-pointer"
         >
           <option value="">ทุกหมวดหมู่</option>
           {categoryOptions.map((c) => (
@@ -272,7 +272,7 @@ function TransactionsContent() {
         <select
           value={leakFlag}
           onChange={(e) => updateParams({ leakFlag: e.target.value || null, page: null })}
-          className="text-sm px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#7F77DD]/30 cursor-pointer"
+          className="h-10 text-sm px-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#7F77DD]/30 cursor-pointer"
         >
           {STATUS_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
@@ -284,7 +284,7 @@ function TransactionsContent() {
         <select
           value={month}
           onChange={(e) => updateParams({ month: e.target.value || null, page: null })}
-          className="text-sm px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#7F77DD]/30 cursor-pointer"
+          className="h-10 text-sm px-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#7F77DD]/30 cursor-pointer"
         >
           <option value="">ทุกเดือน</option>
           {availableMonths.map((m) => (
