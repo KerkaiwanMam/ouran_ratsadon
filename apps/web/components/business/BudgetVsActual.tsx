@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Pencil, X, Check, Loader2 } from "lucide-react";
 
 interface CategoryBudget {
@@ -138,9 +139,12 @@ export default function BudgetVsActual({ categories, period, onBudgetSaved }: Pr
             <div key={cat.name}>
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  <Link
+                    href={`/transactions?category=${encodeURIComponent(cat.name)}`}
+                    className="text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-[#7F77DD] hover:underline transition-colors"
+                  >
                     {cat.name}
-                  </span>
+                  </Link>
                   {overBudget && (
                     <span className="text-xs text-red-500 font-medium">เกินงบ</span>
                   )}

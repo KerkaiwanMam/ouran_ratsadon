@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BarChart3, Github } from "lucide-react";
+import SkyTrainScene from "@/components/shared/SkyTrainScene";
 
 const FOOTER_LINKS = [
   {
@@ -29,6 +30,10 @@ const FOOTER_LINKS = [
 export default function Footer() {
   return (
     <footer className="bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800">
+      {/* SkyTrain band — night city strip above the footer content */}
+      <div className="relative overflow-hidden bg-gradient-to-b from-[#0A0E27] to-[#0d1230]">
+        <SkyTrainScene className="block w-full h-[120px] md:h-[160px]" />
+      </div>
       <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
           {/* Brand column */}

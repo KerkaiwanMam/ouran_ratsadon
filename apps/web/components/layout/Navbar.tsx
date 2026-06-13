@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { BarChart3, LogOut, User, Menu, X, ChevronDown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import ThemeToggle from "@/components/shared/ThemeToggle";
 
 const NAV_LINKS = [
   { href: "/explore", label: "งบประมาณรัฐ" },
@@ -99,6 +100,11 @@ export default function Navbar() {
 
         {/* Right side: auth + mobile toggle */}
         <div className="flex items-center gap-2">
+          {/* Theme switcher (desktop) */}
+          <div className="hidden sm:block">
+            <ThemeToggle />
+          </div>
+
           {/* Auth area (desktop) */}
           <div className="hidden sm:flex items-center gap-2">
             {isAuthenticated && user ? (
@@ -199,13 +205,16 @@ export default function Navbar() {
             <BarChart3 size={18} aria-hidden="true" />
             อุรัณ รัษฎร
           </Link>
-          <button
-            onClick={() => setMobileOpen(false)}
-            aria-label="ปิดเมนู"
-            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
-          >
-            <X size={18} aria-hidden="true" />
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button
+              onClick={() => setMobileOpen(false)}
+              aria-label="ปิดเมนู"
+              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
+          </div>
         </div>
 
         {/* Drawer nav links */}

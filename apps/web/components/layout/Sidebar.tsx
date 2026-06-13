@@ -15,7 +15,9 @@ import {
   CreditCard,
   ScrollText,
   Database,
+  Receipt,
 } from "lucide-react";
+import ThemeToggle from "@/components/shared/ThemeToggle";
 
 interface SidebarProps {
   role?: "member" | "admin";
@@ -23,7 +25,9 @@ interface SidebarProps {
 
 const memberLinks = [
   { href: "/dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
+  { href: "/transactions", label: "รายการธุรกรรม", icon: Receipt },
   { href: "/analytics", label: "วิเคราะห์เชิงลึก", icon: LineChart },
+  { href: "/vendors", label: "ผู้ให้บริการ", icon: Users, pro: true },
   { href: "/upload", label: "อัปโหลดไฟล์", icon: Upload },
   { href: "/files", label: "ไฟล์ของฉัน", icon: FolderOpen },
   { href: "/files/compare", label: "เปรียบเทียบ", icon: GitCompare },
@@ -81,7 +85,7 @@ export default function Sidebar({ role = "member" }: SidebarProps) {
                 className={active || isUpgrade ? "text-[#7F77DD]" : "text-gray-400 dark:text-gray-500"}
               />
               <span>{link.label}</span>
-              {isUpgrade && (
+              {(isUpgrade || "pro" in link) && (
                 <span className="ml-auto text-[10px] font-bold bg-[#7F77DD] text-white px-1.5 py-0.5 rounded-full leading-none">
                   PRO
                 </span>
@@ -91,11 +95,12 @@ export default function Sidebar({ role = "member" }: SidebarProps) {
         })}
       </nav>
 
-      {/* Role label */}
-      <div className="px-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+      {/* Theme switcher + role label */}
+      <div className="px-3 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2">
         <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">
           {role === "admin" ? "ผู้ดูแลระบบ" : "สมาชิก"}
         </p>
+        <ThemeToggle />
       </div>
     </aside>
   );

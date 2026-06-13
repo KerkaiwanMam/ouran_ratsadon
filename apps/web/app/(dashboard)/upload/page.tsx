@@ -5,14 +5,28 @@ import { useRouter } from "next/navigation";
 import {
   Upload,
   FileSpreadsheet,
-  Loader2,
   CheckCircle2,
   AlertCircle,
   Building2,
   Info,
+  Tags,
+  ShieldAlert,
+  Check,
+  Download,
 } from "lucide-react";
 
 type UploadStatus = "idle" | "dragging" | "uploading" | "done" | "error";
+
+const PROGRESS_STEPS = [
+  { label: "อัปโหลดไฟล์", icon: Upload },
+  { label: "จัดหมวดหมู่อัตโนมัติ", icon: Tags },
+  { label: "ตรวจจับความผิดปกติ", icon: ShieldAlert },
+  { label: "เสร็จสิ้น", icon: CheckCircle2 },
+];
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 interface FormatOption {
   value: string;
@@ -84,6 +98,7 @@ export default function UploadPage() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<UploadStatus>("idle");
+  const [progressStep, setProgressStep] = useState(0);
   const [error, setError] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [sourceFormat, setSourceFormat] = useState("EXCEL_TEMPLATE");
@@ -107,6 +122,7 @@ export default function UploadPage() {
     if (!selectedFile) return;
     setError("");
     setStatus("uploading");
+    setProgressStep(0);
 
     try {
       const bank = bankCode(sourceFormat);
@@ -150,10 +166,14 @@ export default function UploadPage() {
         uploadForm.append("source_format", sourceFormat);
         uploadForm.append("parsed_transactions", JSON.stringify(parsed.entries));
 
-        const uploadRes = await fetch("/api/files/upload", {
+        setProgressStep(1);
+        const uploadPromise = fetch("/api/files/upload", {
           method: "POST",
           body: uploadForm,
         });
+        await delay(700);
+        setProgressStep(2);
+        const uploadRes = await uploadPromise;
         const uploadData = await uploadRes.json() as { file?: { id: string }; message?: string };
         if (!uploadRes.ok) {
           setError(uploadData.message ?? "อัปโหลดไม่สำเร็จ");
@@ -199,10 +219,14 @@ export default function UploadPage() {
         uploadForm.append("source_format", sourceFormat);
         uploadForm.append("parsed_transactions", JSON.stringify(parsed.transactions));
 
-        const uploadRes = await fetch("/api/files/upload", {
+        setProgressStep(1);
+        const uploadPromise = fetch("/api/files/upload", {
           method: "POST",
           body: uploadForm,
         });
+        await delay(700);
+        setProgressStep(2);
+        const uploadRes = await uploadPromise;
         const uploadData = await uploadRes.json() as { file?: { id: string }; message?: string };
         if (!uploadRes.ok) {
           setError(uploadData.message ?? "อัปโหลดไม่สำเร็จ");
@@ -259,7 +283,11 @@ export default function UploadPage() {
           }
         }
 
-        const confirmRes = await fetch(`/api/files/${presignData.fileId}/confirm`, { method: "POST" });
+        setProgressStep(1);
+        const confirmPromise = fetch(`/api/files/${presignData.fileId}/confirm`, { method: "POST" });
+        await delay(700);
+        setProgressStep(2);
+        const confirmRes = await confirmPromise;
         const confirmData = await confirmRes.json() as { file?: { id: string }; message?: string };
         if (!confirmRes.ok) {
           setError(confirmData.message ?? "อัปโหลดไม่สำเร็จ");
@@ -269,6 +297,7 @@ export default function UploadPage() {
         fileId = confirmData.file!.id;
       }
 
+      setProgressStep(3);
       setStatus("done");
       setTimeout(() => router.push(`/report/${fileId}/overview`), 1500);
     } catch {
@@ -356,11 +385,48 @@ export default function UploadPage() {
         />
 
         {status === "uploading" ? (
-          <>
-            <Loader2 size={36} className="text-[#7F77DD] animate-spin mb-3" />
-            <p className="font-medium text-gray-700 dark:text-gray-300">กำลังประมวลผล…</p>
-            <p className="text-xs text-gray-400 mt-1">จัดหมวดหมู่รายการและตรวจจับ anomaly</p>
-          </>
+          <div className="w-full max-w-sm">
+            <div className="flex items-center justify-between">
+              {PROGRESS_STEPS.map((step, i) => {
+                const StepIcon = step.icon;
+                const done = i < progressStep;
+                const active = i === progressStep;
+                return (
+                  <div key={step.label} className="flex items-center flex-1 last:flex-none">
+                    <div className="flex flex-col items-center gap-1.5">
+                      <div
+                        className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-colors ${
+                          done
+                            ? "bg-[#7F77DD] border-[#7F77DD] text-white"
+                            : active
+                            ? "border-[#7F77DD] text-[#7F77DD] animate-pulse"
+                            : "border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600"
+                        }`}
+                      >
+                        {done ? <Check size={16} /> : <StepIcon size={16} />}
+                      </div>
+                      <span
+                        className={`text-[11px] text-center leading-tight ${
+                          done || active
+                            ? "text-gray-700 dark:text-gray-300 font-medium"
+                            : "text-gray-300 dark:text-gray-600"
+                        }`}
+                      >
+                        {step.label}
+                      </span>
+                    </div>
+                    {i < PROGRESS_STEPS.length - 1 && (
+                      <div
+                        className={`h-0.5 flex-1 mx-1 mb-4 rounded-full transition-colors ${
+                          i < progressStep ? "bg-[#7F77DD]" : "bg-gray-200 dark:bg-gray-700"
+                        }`}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         ) : status === "done" ? (
           <>
             <CheckCircle2 size={36} className="text-green-500 mb-3" />
@@ -372,7 +438,7 @@ export default function UploadPage() {
             <AlertCircle size={36} className="text-red-500 mb-3" />
             <p className="font-medium text-red-700 dark:text-red-400">{error}</p>
             <p
-              className="text-xs text-[#7F77DD] mt-2 hover:underline"
+              className="text-xs text-[#7F77DD] mt-2 hover:underline cursor-pointer"
               onClick={(e) => { e.stopPropagation(); setStatus("idle"); setError(""); }}
             >
               ลองใหม่
@@ -409,7 +475,7 @@ export default function UploadPage() {
       {selectedFile && status === "idle" && (
         <button
           onClick={handleUpload}
-          className="mt-4 w-full py-3 bg-[#7F77DD] text-white font-semibold rounded-xl hover:bg-[#534AB7] transition-colors"
+          className="mt-4 w-full py-3 bg-[#7F77DD] text-white font-semibold rounded-xl hover:bg-[#534AB7] transition-colors duration-200 cursor-pointer"
         >
           อัปโหลดและวิเคราะห์
         </button>
@@ -427,9 +493,10 @@ export default function UploadPage() {
           <a
             href="/templates/sme-template.csv"
             download
-            className="text-blue-700 dark:text-blue-400 font-medium hover:underline"
+            className="inline-flex items-center gap-1.5 text-blue-700 dark:text-blue-400 font-medium hover:underline cursor-pointer"
           >
-            📥 ดาวน์โหลด Template (.csv)
+            <Download size={14} aria-hidden="true" />
+            ดาวน์โหลด Template (.csv)
           </a>
         </div>
       )}

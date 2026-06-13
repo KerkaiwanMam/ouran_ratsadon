@@ -1,15 +1,49 @@
 "use client";
 
 import useSWR from "swr";
+import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
-import StatCard from "@/components/shared/StatCard";
 import StatusBadge from "@/components/shared/StatusBadge";
 import SpendingPieChart from "@/components/charts/SpendingPieChart";
 import BudgetVsActual from "@/components/business/BudgetVsActual";
 import Link from "next/link";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2, ArrowUpRight } from "lucide-react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+interface TrendSummary {
+  months: { month: string; totalIncome: number; totalExpense: number; net: number }[];
+}
+
+const THAI_MONTHS_SHORT = [
+  "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
+  "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
+];
+
+function trendMonthLabel(m: string) {
+  const [y, mm] = m.split("-");
+  const idx = parseInt(mm, 10) - 1;
+  return `${THAI_MONTHS_SHORT[idx] ?? mm} ${y?.slice(2) ?? ""}`;
+}
+
+function compactBaht(v: number) {
+  const abs = Math.abs(v);
+  if (abs >= 1e6) return `${(v / 1e6).toFixed(1)}M`;
+  if (abs >= 1e3) return `${(v / 1e3).toFixed(0)}k`;
+  return `${v}`;
+}
 
 interface DashboardTransaction {
   id: string;
@@ -32,17 +66,38 @@ interface DashboardCategory {
   budgetAmount: number | null;
 }
 
+interface TopLeak {
+  id: string;
+  description: string;
+  category: string;
+  amount: number;
+  leakFlag: "SPIKE" | "DUPLICATE" | "OUTLIER" | "CREEP";
+  leakSeverity: "CRITICAL" | "WARNING" | "INFO" | null;
+  leakReason: string | null;
+}
+
 interface DashboardResponse {
   hasData: boolean;
   summary: {
     totalIncome: number;
     totalExpense: number;
     netCashFlow: number;
+    burnRate: number;
     period: string | null;
     categories: DashboardCategory[];
+    cashRunwayMonths: number | null;
+    topLeak: TopLeak | null;
+    isPro: boolean;
   };
   transactions: DashboardTransaction[];
 }
+
+const LEAK_LABELS: Record<string, string> = {
+  SPIKE: "ค่าใช้จ่ายพุ่งสูง",
+  DUPLICATE: "รายการซ้ำ/เปลี่ยนแปลง",
+  OUTLIER: "ค่าผิดปกติ",
+  CREEP: "ค่าใช้จ่ายไต่ระดับ",
+};
 
 function formatPeriod(period: string | null) {
   if (!period) return "";
@@ -56,6 +111,7 @@ function formatPeriod(period: string | null) {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { data, isLoading, error, mutate } = useSWR<DashboardResponse>(
     "/api/business/dashboard",
     fetcher,
@@ -64,6 +120,7 @@ export default function DashboardPage() {
       revalidateOnReconnect: true,
     }
   );
+  const trend = useSWR<TrendSummary>("/api/business/analytics/summary?range=6", fetcher);
 
   if (isLoading) {
     return (
@@ -103,7 +160,7 @@ export default function DashboardPage() {
     );
   }
 
-  const { totalIncome, totalExpense, netCashFlow, categories, period } = data.summary;
+  const { totalIncome, totalExpense, netCashFlow, burnRate, categories, period, cashRunwayMonths, topLeak, isPro } = data.summary;
   const transactions = data.transactions;
 
   const pieData = categories.map((c) => ({
@@ -111,13 +168,32 @@ export default function DashboardPage() {
     value: c.amount,
   }));
 
+  const trendMonths = trend.data?.months ?? [];
+  const curMonth = trendMonths[trendMonths.length - 1] ?? null;
+  const prevMonth = trendMonths.length > 1 ? trendMonths[trendMonths.length - 2] : null;
+  const comparisonData = curMonth
+    ? [
+        { name: "รายรับ", เดือนนี้: curMonth.totalIncome, เดือนก่อน: prevMonth?.totalIncome ?? 0 },
+        { name: "รายจ่าย", เดือนนี้: curMonth.totalExpense, เดือนก่อน: prevMonth?.totalExpense ?? 0 },
+        { name: "สุทธิ", เดือนนี้: curMonth.net, เดือนก่อน: prevMonth?.net ?? 0 },
+      ]
+    : [];
+
   const anomalyCount = transactions.filter((t) => t.leakFlag !== "NONE").length;
+  const criticalCount = transactions.filter((t) => t.leakSeverity === "CRITICAL").length;
+  const spendRate = totalIncome > 0 ? (totalExpense / totalIncome) * 100 : 0;
+  const topCategory = categories.length > 0
+    ? [...categories].sort((a, b) => b.amount - a.amount)[0]
+    : null;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">แดชบอร์ด</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            <span className="text-gradient-accent">แดชบอร์ด</span>{" "}
+            <span className="text-gray-900 dark:text-gray-100">การเงิน</span>
+          </h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {formatPeriod(period)} 2568 (ข้อมูลจริงของคุณ)
           </p>
@@ -125,7 +201,7 @@ export default function DashboardPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/upload"
-            className="flex items-center gap-1.5 text-sm px-3 py-1.5 bg-[#7F77DD] text-white rounded-lg hover:bg-[#534AB7] transition-colors"
+            className="flex items-center gap-1.5 text-sm px-3.5 py-2 bg-gradient-accent text-white font-semibold rounded-lg hover:opacity-90 transition-opacity"
           >
             <Upload size={14} />
             อัปโหลดไฟล์เพิ่ม
@@ -133,17 +209,294 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatCard label="รายรับรวม" value={formatCurrency(totalIncome)} trend="up" />
-        <StatCard label="รายจ่ายรวม" value={formatCurrency(totalExpense)} trend="up" />
-        <StatCard
-          label="กระแสเงินสด"
-          value={formatCurrency(netCashFlow)}
-          trend={netCashFlow >= 0 ? "up" : "down"}
-        />
-        <StatCard label="รายการผิดปกติ" value={anomalyCount} unit="รายการ" />
+      {/* KPI row — net cash flow leads, supporting numbers follow */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {/* Primary: net cash flow */}
+        <div className="relative overflow-hidden col-span-2 surface-glass rounded-2xl px-5 py-4">
+          <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent" aria-hidden="true" />
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+            กระแสเงินสดสุทธิ (รายรับ − รายจ่าย)
+          </p>
+          <p
+            className={`text-3xl font-black leading-none tracking-tight ${
+              netCashFlow >= 0
+                ? "text-gradient-accent w-fit"
+                : "text-red-600 dark:text-red-400"
+            }`}
+          >
+            {netCashFlow >= 0 ? "+" : "−"}
+            {formatCurrency(Math.abs(netCashFlow))}
+          </p>
+          <div className="flex items-center gap-4 mt-3 text-xs">
+            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+              รับ {formatCurrency(totalIncome)}
+            </span>
+            <span className="text-gray-400">·</span>
+            <span className="text-gray-600 dark:text-gray-300 font-medium">
+              จ่าย {formatCurrency(totalExpense)}
+            </span>
+          </div>
+        </div>
+
+        {/* Spending rate */}
+        <div className="relative overflow-hidden surface-glass rounded-2xl px-4 py-4">
+          <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent opacity-30" aria-hidden="true" />
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">อัตราการใช้จ่าย</p>
+          <p
+            className={`text-2xl font-black leading-none ${
+              spendRate > 100
+                ? "text-red-600 dark:text-red-400"
+                : "text-gray-900 dark:text-gray-100"
+            }`}
+          >
+            {totalIncome > 0 ? `${spendRate.toFixed(0)}%` : "—"}
+          </p>
+          <div className="mt-2.5 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full ${
+                spendRate > 100 ? "bg-red-500" : "bg-gradient-accent"
+              }`}
+              style={{ width: `${totalIncome > 0 ? Math.min(spendRate, 100) : 0}%` }}
+            />
+          </div>
+          <p className="text-[11px] text-gray-400 mt-1.5 truncate">
+            {topCategory
+              ? `สูงสุด: ${topCategory.name} (${topCategory.percentage.toFixed(0)}%)`
+              : "ของรายรับทั้งหมด"}
+          </p>
+        </div>
+
+        {/* Anomalies */}
+        <Link
+          href="/analytics"
+          className="relative overflow-hidden surface-glass rounded-2xl px-4 py-4 group cursor-pointer"
+        >
+          <span
+            className={`absolute inset-x-0 top-0 h-0.5 ${
+              anomalyCount > 0 ? "bg-red-500" : "bg-gradient-accent opacity-30"
+            }`}
+            aria-hidden="true"
+          />
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">รายการผิดปกติ</p>
+          <p
+            className={`text-2xl font-black leading-none ${
+              anomalyCount > 0
+                ? "text-red-600 dark:text-red-400"
+                : "text-gray-900 dark:text-gray-100"
+            }`}
+          >
+            {anomalyCount}
+            <span className="text-sm font-normal text-gray-400 ml-1">รายการ</span>
+          </p>
+          <p className="text-[11px] text-gray-400 mt-1.5">
+            {criticalCount > 0 ? `วิกฤต ${criticalCount} รายการ · ` : ""}
+            <span className="text-accent group-hover:underline">ดูการวิเคราะห์ →</span>
+          </p>
+        </Link>
       </div>
+
+      {/* Secondary KPI row — burn rate, cash runway (Pro), top leak */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        {/* Burn rate */}
+        <div className="relative overflow-hidden surface-glass rounded-2xl px-4 py-4">
+          <span
+            className={`absolute inset-x-0 top-0 h-0.5 ${
+              burnRate > 0 ? "bg-red-500" : "bg-gradient-accent opacity-30"
+            }`}
+            aria-hidden="true"
+          />
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">อัตราการเผาเงินสด (เดือนนี้)</p>
+          <p
+            className={`text-2xl font-black leading-none ${
+              burnRate > 0 ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-gray-100"
+            }`}
+          >
+            {burnRate > 0 ? `−${formatCurrency(burnRate)}` : "฿0"}
+          </p>
+          <p className="text-[11px] text-gray-400 mt-1.5">
+            {burnRate > 0 ? "รายจ่ายมากกว่ารายรับเดือนนี้" : "กระแสเงินสดเป็นบวก — ไม่มีการเผาเงินสด"}
+          </p>
+        </div>
+
+        {/* Cash runway — Pro */}
+        {isPro ? (
+          <Link
+            href="/forecast"
+            className="relative overflow-hidden surface-glass rounded-2xl px-4 py-4 group cursor-pointer"
+          >
+            <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent" aria-hidden="true" />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">เงินสดอยู่ได้อีก (Runway)</p>
+            {cashRunwayMonths !== null ? (
+              <p
+                className={`text-2xl font-black leading-none ${
+                  cashRunwayMonths <= 3
+                    ? "text-red-600 dark:text-red-400"
+                    : cashRunwayMonths <= 6
+                    ? "text-amber-500"
+                    : "text-emerald-600 dark:text-emerald-400"
+                }`}
+              >
+                ~{cashRunwayMonths}
+                <span className="text-sm font-normal text-gray-400 ml-1">เดือน</span>
+              </p>
+            ) : (
+              <p className="text-2xl font-black leading-none text-gray-300 dark:text-gray-600">—</p>
+            )}
+            <p className="text-[11px] text-gray-400 mt-1.5">
+              <span className="text-accent group-hover:underline">
+                {cashRunwayMonths !== null ? "ดูการพยากรณ์ →" : "คำนวณการพยากรณ์ →"}
+              </span>
+            </p>
+          </Link>
+        ) : (
+          <Link
+            href="/upgrade"
+            className="relative overflow-hidden surface-glass rounded-2xl px-4 py-4 group cursor-pointer"
+          >
+            <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent opacity-30" aria-hidden="true" />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">เงินสดอยู่ได้อีก (Runway)</p>
+            <p className="text-2xl font-black leading-none text-gray-300 dark:text-gray-600">—</p>
+            <p className="text-[11px] mt-1.5">
+              <span className="text-accent group-hover:underline">ปลดล็อกด้วย Pro →</span>
+            </p>
+          </Link>
+        )}
+
+        {/* Top leak */}
+        {topLeak ? (
+          <Link
+            href={`/transactions?leakFlag=${topLeak.leakFlag}`}
+            className="relative overflow-hidden surface-glass rounded-2xl px-4 py-4 group cursor-pointer"
+          >
+            <span
+              className={`absolute inset-x-0 top-0 h-0.5 ${
+                topLeak.leakSeverity === "CRITICAL" ? "bg-red-500" : "bg-amber-400"
+              }`}
+              aria-hidden="true"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+              สิ่งที่ควรดูก่อน: {LEAK_LABELS[topLeak.leakFlag] ?? topLeak.leakFlag}
+            </p>
+            <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">
+              {topLeak.description}
+            </p>
+            <p className="text-[11px] text-gray-400 mt-1.5 truncate">
+              {formatCurrency(Math.abs(topLeak.amount))} ·{" "}
+              <span className="text-accent group-hover:underline">ดูรายการ →</span>
+            </p>
+          </Link>
+        ) : (
+          <div className="relative overflow-hidden surface-glass rounded-2xl px-4 py-4">
+            <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent opacity-30" aria-hidden="true" />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">สิ่งที่ควรดูก่อน</p>
+            <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">ไม่พบรายการผิดปกติ</p>
+            <p className="text-[11px] text-gray-400 mt-1.5">เดือนนี้ยังไม่มีรายการที่ต้องตรวจสอบ</p>
+          </div>
+        )}
+      </div>
+
+      {/* 6-month trend + current-vs-previous-month comparison */}
+      {(trend.data?.months?.length ?? 0) >= 2 && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <div className="relative overflow-hidden surface-glass rounded-2xl lg:col-span-2">
+            <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent" aria-hidden="true" />
+            <div className="px-5 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold">แนวโน้มกระแสเงินสด 6 เดือน</h3>
+                <p className="text-xs text-gray-400 mt-0.5">รายรับ (เขียว) เทียบรายจ่าย (ชมพู)</p>
+              </div>
+              <Link
+                href="/analytics"
+                className="text-xs text-accent hover:underline inline-flex items-center gap-0.5"
+              >
+                วิเคราะห์เชิงลึก
+                <ArrowUpRight size={12} aria-hidden="true" />
+              </Link>
+            </div>
+            <div className="p-4">
+              <ResponsiveContainer width="100%" height={190}>
+                <AreaChart
+                  data={trend.data!.months.map((m) => ({
+                    name: trendMonthLabel(m.month),
+                    รายรับ: m.totalIncome,
+                    รายจ่าย: m.totalExpense,
+                  }))}
+                >
+                  <defs>
+                    <linearGradient id="dash-income" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="dash-expense" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#fb7185" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#fb7185" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    tickFormatter={compactBaht}
+                    tick={{ fill: "#94a3b8", fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={46}
+                  />
+                  <Tooltip
+                    formatter={(value) => formatCurrency(Number(value))}
+                    contentStyle={{
+                      background: "var(--surface)",
+                      border: "1px solid var(--border-subtle)",
+                      borderRadius: 12,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Area type="monotone" dataKey="รายรับ" stroke="#10b981" strokeWidth={2} fill="url(#dash-income)" />
+                  <Area type="monotone" dataKey="รายจ่าย" stroke="#fb7185" strokeWidth={2} fill="url(#dash-expense)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Current vs previous month comparison */}
+          <div className="relative overflow-hidden surface-glass rounded-2xl">
+            <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent opacity-60" aria-hidden="true" />
+            <div className="px-5 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+              <h3 className="text-sm font-bold">เดือนนี้ vs เดือนก่อน</h3>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {curMonth ? trendMonthLabel(curMonth.month) : ""}
+                {prevMonth ? ` เทียบกับ ${trendMonthLabel(prevMonth.month)}` : ""}
+              </p>
+            </div>
+            <div className="p-4">
+              <ResponsiveContainer width="100%" height={190}>
+                <BarChart data={comparisonData} barGap={4}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    tickFormatter={compactBaht}
+                    tick={{ fill: "#94a3b8", fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={46}
+                  />
+                  <Tooltip
+                    formatter={(value) => formatCurrency(Number(value))}
+                    contentStyle={{
+                      background: "var(--surface)",
+                      border: "1px solid var(--border-subtle)",
+                      borderRadius: 12,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="เดือนก่อน" fill="#9CA3AF" radius={[4, 4, 0, 0]} maxBarSize={28} />
+                  <Bar dataKey="เดือนนี้" fill="#7F77DD" radius={[4, 4, 0, 0]} maxBarSize={28} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Charts */}
       {categories.length > 0 && (
@@ -153,15 +506,22 @@ export default function DashboardPage() {
             period={period}
             onBudgetSaved={() => mutate()}
           />
-          <SpendingPieChart data={pieData} />
+          <SpendingPieChart
+            data={pieData}
+            onSliceClick={(name) => router.push(`/transactions?category=${encodeURIComponent(name)}`)}
+          />
         </div>
       )}
 
       {/* Transactions */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border overflow-hidden">
-        <div className="px-4 py-3 border-b flex items-center justify-between">
-          <h3 className="text-sm font-medium">รายการล่าสุด</h3>
-          <span className="text-xs text-gray-400">{transactions.length} รายการ</span>
+      <div className="relative surface-glass rounded-2xl overflow-hidden">
+        <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent" aria-hidden="true" />
+        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <h3 className="text-sm font-bold">รายการล่าสุด</h3>
+          <Link href="/transactions" className="text-xs text-accent hover:underline inline-flex items-center gap-0.5">
+            ดูทั้งหมด {transactions.length} รายการ
+            <ArrowUpRight size={12} aria-hidden="true" />
+          </Link>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -185,11 +545,16 @@ export default function DashboardPage() {
               {transactions.map((tx) => (
                 <tr
                   key={tx.id}
+                  onClick={
+                    tx.leakFlag !== "NONE"
+                      ? () => router.push(`/transactions?leakFlag=${tx.leakFlag}`)
+                      : undefined
+                  }
                   className={
                     tx.leakSeverity === "CRITICAL"
-                      ? "bg-red-50 dark:bg-red-900/10"
+                      ? "bg-red-50 dark:bg-red-900/10 cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/20"
                       : tx.leakFlag !== "NONE"
-                      ? "bg-amber-50 dark:bg-amber-900/10"
+                      ? "bg-amber-50 dark:bg-amber-900/10 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/20"
                       : ""
                   }
                 >

@@ -2,7 +2,22 @@
 
 import useSWR from "swr";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 import {
   Loader2,
   TrendingUp,
@@ -12,6 +27,8 @@ import {
   CheckCircle2,
   XCircle,
   Sparkles,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -63,17 +80,75 @@ interface Recommendation {
 
 // ─── Small UI helpers ────────────────────────────────────────────────────────
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Panel({
+  title,
+  caption,
+  children,
+  className = "",
+}: {
+  title: string;
+  caption?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">{title}</h3>
-      {children}
+    <div className={`relative overflow-hidden surface-glass rounded-2xl ${className}`}>
+      <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent" aria-hidden="true" />
+      <div className="px-5 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+        <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">{title}</h3>
+        {caption && <p className="text-xs text-gray-400 mt-0.5">{caption}</p>}
+      </div>
+      <div className="p-5">{children}</div>
     </div>
   );
 }
 
 function EmptyNote({ children }: { children: React.ReactNode }) {
   return <p className="text-sm text-gray-400 py-6 text-center">{children}</p>;
+}
+
+function DeltaBadge({
+  current,
+  previous,
+  invert = false,
+}: {
+  current: number;
+  previous: number | null;
+  /** true when an increase is bad news (e.g. expenses) */
+  invert?: boolean;
+}) {
+  if (previous === null || previous === 0) return null;
+  const pct = ((current - previous) / Math.abs(previous)) * 100;
+  const up = pct >= 0;
+  const good = invert ? !up : up;
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 text-[11px] font-semibold ${
+        good ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
+      }`}
+    >
+      {up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+      {Math.abs(pct).toFixed(0)}% จากเดือนก่อน
+    </span>
+  );
+}
+
+const THAI_MONTHS_SHORT = [
+  "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
+  "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
+];
+
+function monthLabel(m: string) {
+  const [y, mm] = m.split("-");
+  const idx = parseInt(mm, 10) - 1;
+  return `${THAI_MONTHS_SHORT[idx] ?? mm} ${y?.slice(2) ?? ""}`;
+}
+
+function compactBaht(v: number) {
+  const abs = Math.abs(v);
+  if (abs >= 1e6) return `${(v / 1e6).toFixed(1)}M`;
+  if (abs >= 1e3) return `${(v / 1e3).toFixed(0)}k`;
+  return `${v}`;
 }
 
 const insightTypeLabel: Record<string, string> = {
@@ -96,9 +171,12 @@ const priorityStyle: Record<string, string> = {
 
 const priorityLabel: Record<string, string> = { high: "สำคัญมาก", medium: "ควรดู", low: "ทั่วไป" };
 
+const PIE_COLORS = ["#7F77DD", "#534AB7", "#1D9E75", "#EF9F27", "#E24B4A", "#9CA3AF"];
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function AnalyticsPage() {
+  const router = useRouter();
   const summary = useSWR<DescriptiveSummary>("/api/business/analytics/summary?range=6", fetcher);
   const diagnostics = useSWR<{ insights: DiagnosticInsight[] }>(
     "/api/business/analytics/diagnose?limit=10",
@@ -127,9 +205,25 @@ export default function AnalyticsPage() {
 
   const months = summary.data?.months ?? [];
   const latest = months[months.length - 1];
+  const previous = months.length > 1 ? months[months.length - 2] : null;
   const insights = diagnostics.data?.insights ?? [];
   const snapshot = forecastQ.data?.snapshot ?? null;
   const recs = recommendations.data?.recommendations ?? [];
+
+  const chartData = months.map((m) => ({
+    name: monthLabel(m.month),
+    รายรับ: m.totalIncome,
+    รายจ่าย: m.totalExpense,
+    สุทธิ: m.net,
+  }));
+
+  const topCategories = latest
+    ? [...latest.byCategory]
+        .filter((c) => c.totalExpense > 0)
+        .sort((a, b) => b.totalExpense - a.totalExpense)
+        .slice(0, 6)
+    : [];
+  const maxCatExpense = topCategories[0]?.totalExpense ?? 1;
 
   async function handleRecAction(id: string, status: "APPLIED" | "DISMISSED") {
     await fetch(`/api/business/analytics/recommendations/${id}`, {
@@ -147,191 +241,398 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-          วิเคราะห์เชิงลึก (Analytics)
+        <h1 className="text-2xl font-bold tracking-tight">
+          <span className="text-gradient-accent">วิเคราะห์</span>{" "}
+          <span className="text-gray-900 dark:text-gray-100">เชิงลึก</span>
         </h1>
         <p className="text-sm text-gray-400 mt-0.5">
-          ภาพรวม 4 มิติ — เกิดอะไรขึ้น ทำไมถึงเกิด แนวโน้มต่อไป และควรทำอะไรต่อ
+          ภาพรวมก่อน เจาะลึกทีหลัง — เกิดอะไรขึ้น ทำไม แนวโน้ม และควรทำอะไรต่อ
         </p>
       </div>
 
-      {/* Tier 1 — Descriptive */}
-      <Card title="1. เกิดอะไรขึ้น (Descriptive) — สรุปรายเดือน">
-        {months.length === 0 ? (
+      {months.length === 0 ? (
+        <Panel title="ยังไม่มีข้อมูล">
           <EmptyNote>
             ยังไม่มีข้อมูลเพียงพอ —{" "}
-            <Link href="/upload" className="text-[#7F77DD] hover:underline">
+            <Link href="/upload" className="text-accent hover:underline">
               อัปโหลดไฟล์การเงินของคุณ
             </Link>{" "}
             เพื่อเริ่มวิเคราะห์
           </EmptyNote>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-gray-400 border-b border-gray-100 dark:border-gray-700">
-                  <th className="py-2 pr-4 font-medium">เดือน</th>
-                  <th className="py-2 pr-4 font-medium text-right">รายรับ</th>
-                  <th className="py-2 pr-4 font-medium text-right">รายจ่าย</th>
-                  <th className="py-2 font-medium text-right">สุทธิ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {months.map((m) => (
-                  <tr key={m.month} className="border-b border-gray-50 dark:border-gray-700/50 last:border-0">
-                    <td className="py-2 pr-4 text-gray-700 dark:text-gray-200">{m.month}</td>
-                    <td className="py-2 pr-4 text-right text-emerald-600">{formatCurrency(m.totalIncome)}</td>
-                    <td className="py-2 pr-4 text-right text-red-500">{formatCurrency(m.totalExpense)}</td>
-                    <td
-                      className={`py-2 text-right font-medium ${
-                        m.net >= 0 ? "text-emerald-600" : "text-red-500"
-                      }`}
-                    >
-                      {formatCurrency(m.net)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {latest && (
-              <p className="text-xs text-gray-400 mt-3">
-                เดือนล่าสุด ({latest.month}) มีหมวดค่าใช้จ่ายสูงสุด:{" "}
-                {latest.byCategory[0]?.category ?? "—"} (
-                {formatCurrency(latest.byCategory[0]?.totalExpense ?? 0)})
+        </Panel>
+      ) : (
+        <>
+          {/* ── Overview KPI row ───────────────────────────────────────────── */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="relative overflow-hidden surface-glass rounded-2xl px-4 py-4">
+              <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent" aria-hidden="true" />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                สุทธิเดือนล่าสุด ({latest ? monthLabel(latest.month) : "—"})
               </p>
-            )}
-          </div>
-        )}
-      </Card>
-
-      {/* Tier 2 — Diagnostic */}
-      <Card title="2. ทำไมถึงเกิดขึ้น (Diagnostic) — ข้อสังเกตจากเดือนล่าสุด">
-        {insights.length === 0 ? (
-          <EmptyNote>ยังไม่พบความผิดปกติที่น่าสังเกตในเดือนล่าสุด</EmptyNote>
-        ) : (
-          <ul className="space-y-3">
-            {insights.map((insight) => {
-              const Icon = insightTypeIcon[insight.insightType] ?? AlertTriangle;
-              return (
-                <li key={insight.id} className="flex items-start gap-3">
-                  <span className="mt-0.5 shrink-0 text-[#7F77DD]">
-                    <Icon size={16} aria-hidden="true" />
-                  </span>
-                  <div>
-                    <p className="text-xs font-medium text-gray-400 mb-0.5">
-                      {insightTypeLabel[insight.insightType] ?? insight.insightType} · {insight.month}
-                    </p>
-                    <p className="text-sm text-gray-700 dark:text-gray-200">{insight.summary}</p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Card>
-
-      {/* Tier 3 — Predictive */}
-      <Card title="3. แนวโน้มต่อไป (Predictive) — พยากรณ์เดือนถัดไป">
-        {!snapshot ? (
-          <div className="text-center py-4">
-            <EmptyNote>ยังไม่มีข้อมูลพยากรณ์ — ต้องมีประวัติอย่างน้อย 3 เดือน</EmptyNote>
-            <button
-              onClick={handleRunForecast}
-              className="text-sm font-medium text-white bg-[#7F77DD] hover:bg-[#6b63c9] px-4 py-2 rounded-lg transition-colors"
-            >
-              คำนวณการพยากรณ์
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <p className="text-xs text-gray-400">เดือนที่พยากรณ์</p>
-                <p className="text-base font-semibold text-gray-800 dark:text-gray-100">
-                  {snapshot.forecastMonth}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400">กระแสเงินสดสุทธิที่คาด</p>
-                <p
-                  className={`text-base font-semibold ${
-                    snapshot.predictedNet >= 0 ? "text-emerald-600" : "text-red-500"
-                  }`}
-                >
-                  {formatCurrency(snapshot.predictedNet)}
-                </p>
-                <p className="text-xs text-gray-400">
-                  ช่วงความเป็นไปได้: {formatCurrency(snapshot.confidenceLow)} ถึง{" "}
-                  {formatCurrency(snapshot.confidenceHigh)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400">เงินสดจะอยู่ได้อีก</p>
-                <p className="text-base font-semibold text-gray-800 dark:text-gray-100">
-                  {snapshot.cashRunwayMonths !== null ? `~${snapshot.cashRunwayMonths} เดือน` : "—"}
-                </p>
+              <p
+                className={`text-2xl font-black leading-none ${
+                  (latest?.net ?? 0) >= 0
+                    ? "text-gradient-accent w-fit"
+                    : "text-red-600 dark:text-red-400"
+                }`}
+              >
+                {formatCurrency(latest?.net ?? 0)}
+              </p>
+              <div className="mt-1.5">
+                <DeltaBadge current={latest?.net ?? 0} previous={previous?.net ?? null} />
               </div>
             </div>
-            <p className="text-xs text-gray-400 border-t border-gray-100 dark:border-gray-700 pt-2">
-              วิธีคิด: {snapshot.inputWindow?.disclaimer ?? "ใช้ค่าเฉลี่ยถ่วงน้ำหนัก (WMA) — ไม่ใช่ AI"}
-            </p>
-            <button
-              onClick={handleRunForecast}
-              className="text-xs font-medium text-[#7F77DD] hover:underline"
-            >
-              คำนวณใหม่จากข้อมูลล่าสุด
-            </button>
-          </div>
-        )}
-      </Card>
 
-      {/* Tier 4 — Prescriptive */}
-      <Card title="4. ควรทำอะไรต่อ (Prescriptive) — คำแนะนำที่แนะนำ">
-        {recs.length === 0 ? (
-          <EmptyNote>ยังไม่มีคำแนะนำในขณะนี้ — ระบบจะแนะนำเมื่อพบสิ่งที่น่าสนใจ</EmptyNote>
-        ) : (
-          <ul className="space-y-3">
-            {recs.map((rec) => (
-              <li
-                key={rec.id}
-                className="flex items-start justify-between gap-3 border-b border-gray-50 dark:border-gray-700/50 pb-3 last:border-0 last:pb-0"
-              >
-                <div className="flex items-start gap-2.5">
-                  <Lightbulb size={16} className="text-[#7F77DD] mt-0.5 shrink-0" aria-hidden="true" />
-                  <div>
-                    <span
-                      className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded mb-1 ${
-                        priorityStyle[rec.priority] ?? priorityStyle.low
-                      }`}
+            <div className="relative overflow-hidden surface-glass rounded-2xl px-4 py-4">
+              <span className="absolute inset-x-0 top-0 h-0.5 bg-emerald-500/60" aria-hidden="true" />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">รายรับ</p>
+              <p className="text-2xl font-black leading-none text-emerald-600 dark:text-emerald-400">
+                {formatCurrency(latest?.totalIncome ?? 0)}
+              </p>
+              <div className="mt-1.5">
+                <DeltaBadge
+                  current={latest?.totalIncome ?? 0}
+                  previous={previous?.totalIncome ?? null}
+                />
+              </div>
+            </div>
+
+            <div className="relative overflow-hidden surface-glass rounded-2xl px-4 py-4">
+              <span className="absolute inset-x-0 top-0 h-0.5 bg-rose-500/60" aria-hidden="true" />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">รายจ่าย</p>
+              <p className="text-2xl font-black leading-none text-gray-900 dark:text-gray-100">
+                {formatCurrency(latest?.totalExpense ?? 0)}
+              </p>
+              <div className="mt-1.5">
+                <DeltaBadge
+                  current={latest?.totalExpense ?? 0}
+                  previous={previous?.totalExpense ?? null}
+                  invert
+                />
+              </div>
+            </div>
+
+            <div className="relative overflow-hidden surface-glass rounded-2xl px-4 py-4">
+              <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent opacity-40" aria-hidden="true" />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">พยากรณ์เดือนถัดไป</p>
+              {snapshot ? (
+                <>
+                  <p
+                    className={`text-2xl font-black leading-none ${
+                      snapshot.predictedNet >= 0
+                        ? "text-gray-900 dark:text-gray-100"
+                        : "text-red-600 dark:text-red-400"
+                    }`}
+                  >
+                    {formatCurrency(snapshot.predictedNet)}
+                  </p>
+                  <p className="text-[11px] text-gray-400 mt-1.5">
+                    เงินสดอยู่ได้อีก{" "}
+                    {snapshot.cashRunwayMonths !== null ? `~${snapshot.cashRunwayMonths} เดือน` : "—"}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-2xl font-black leading-none text-gray-300 dark:text-gray-600">—</p>
+                  <button
+                    onClick={handleRunForecast}
+                    className="text-[11px] text-accent hover:underline mt-1.5 cursor-pointer"
+                  >
+                    คำนวณการพยากรณ์ →
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* ── Main trend chart + category breakdown ──────────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <Panel
+              title="แนวโน้มรายรับ–รายจ่าย"
+              caption="แท่ง = รายรับ/รายจ่ายต่อเดือน · เส้น = กระแสเงินสดสุทธิ"
+              className="lg:col-span-2"
+            >
+              <ResponsiveContainer width="100%" height={260}>
+                <ComposedChart data={chartData} barGap={2}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    tickFormatter={compactBaht}
+                    tick={{ fill: "#94a3b8", fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={48}
+                  />
+                  <Tooltip
+                    formatter={(value) => formatCurrency(Number(value))}
+                    contentStyle={{
+                      background: "var(--surface)",
+                      border: "1px solid var(--border-subtle)",
+                      borderRadius: 12,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="รายรับ" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={26} />
+                  <Bar dataKey="รายจ่าย" fill="#fb7185" radius={[4, 4, 0, 0]} maxBarSize={26} />
+                  <Line
+                    type="monotone"
+                    dataKey="สุทธิ"
+                    stroke="#22d3ee"
+                    strokeWidth={2.5}
+                    dot={{ r: 3, fill: "#22d3ee" }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </Panel>
+
+            <Panel
+              title="สัดส่วนค่าใช้จ่ายตามหมวดหมู่"
+              caption={latest ? `เดือน ${monthLabel(latest.month)} — คลิกเพื่อดูรายการ` : ""}
+            >
+              {topCategories.length === 0 ? (
+                <EmptyNote>ไม่มีรายจ่ายในเดือนล่าสุด</EmptyNote>
+              ) : (
+                <>
+                  <ResponsiveContainer width="100%" height={160}>
+                    <PieChart>
+                      <Pie
+                        data={topCategories.map((c) => ({ name: c.category, value: c.totalExpense }))}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={42}
+                        outerRadius={68}
+                        paddingAngle={2}
+                        onClick={(entry) =>
+                          router.push(
+                            `/transactions?category=${encodeURIComponent(entry.name as string)}&month=${latest?.month ?? ""}`
+                          )
+                        }
+                      >
+                        {topCategories.map((c, index) => (
+                          <Cell
+                            key={c.category}
+                            fill={PIE_COLORS[index % PIE_COLORS.length]}
+                            className="cursor-pointer"
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value) => formatCurrency(Number(value))}
+                        contentStyle={{
+                          background: "var(--surface)",
+                          border: "1px solid var(--border-subtle)",
+                          borderRadius: 12,
+                          fontSize: 12,
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+
+                  <ul className="space-y-3.5 mt-1">
+                    {topCategories.map((c, index) => (
+                      <li key={c.category}>
+                        <Link
+                          href={`/transactions?category=${encodeURIComponent(c.category)}&month=${latest?.month ?? ""}`}
+                          className="block group"
+                        >
+                          <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="flex items-center gap-1.5 text-gray-700 dark:text-gray-200 font-medium truncate group-hover:text-[#7F77DD] group-hover:underline">
+                              <span
+                                className="w-2 h-2 rounded-full shrink-0"
+                                style={{ background: PIE_COLORS[index % PIE_COLORS.length] }}
+                                aria-hidden="true"
+                              />
+                              {c.category}
+                            </span>
+                            <span className="text-gray-500 tabular-nums shrink-0 ml-2">
+                              {formatCurrency(c.totalExpense)}
+                            </span>
+                          </div>
+                          <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-gradient-accent"
+                              style={{ width: `${(c.totalExpense / maxCatExpense) * 100}%` }}
+                            />
+                          </div>
+                          <p className="text-[10px] text-gray-400 mt-0.5">{c.txCount} รายการ</p>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </Panel>
+          </div>
+
+          {/* ── Detail: monthly table ──────────────────────────────────────── */}
+          <Panel
+            title="รายละเอียดรายเดือน (Descriptive)"
+            caption="ตัวเลขเต็มของทุกเดือนที่วิเคราะห์ — คลิกหมวดในแดชบอร์ดเพื่อดูรายการ"
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-400 border-b border-gray-100 dark:border-gray-700">
+                    <th className="py-2 pr-4 font-medium">เดือน</th>
+                    <th className="py-2 pr-4 font-medium text-right">รายรับ</th>
+                    <th className="py-2 pr-4 font-medium text-right">รายจ่าย</th>
+                    <th className="py-2 font-medium text-right">สุทธิ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {months.map((m) => (
+                    <tr
+                      key={m.month}
+                      className="border-b border-gray-50 dark:border-gray-700/50 last:border-0 group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                      onClick={() => router.push(`/transactions?month=${m.month}`)}
                     >
-                      {priorityLabel[rec.priority] ?? rec.priority}
-                    </span>
-                    <p className="text-sm text-gray-700 dark:text-gray-200">{rec.action}</p>
-                  </div>
+                      <td className="py-2 pr-4 text-gray-700 dark:text-gray-200 group-hover:text-[#7F77DD] group-hover:underline">
+                        {monthLabel(m.month)}
+                      </td>
+                      <td className="py-2 pr-4 text-right text-emerald-600 tabular-nums">
+                        {formatCurrency(m.totalIncome)}
+                      </td>
+                      <td className="py-2 pr-4 text-right text-red-500 tabular-nums">
+                        {formatCurrency(m.totalExpense)}
+                      </td>
+                      <td
+                        className={`py-2 text-right font-medium tabular-nums ${
+                          m.net >= 0 ? "text-emerald-600" : "text-red-500"
+                        }`}
+                      >
+                        {formatCurrency(m.net)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+
+          {/* ── Detail: diagnostic + prescriptive side by side ─────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Panel
+              title="ทำไมถึงเกิดขึ้น (Diagnostic)"
+              caption="ข้อสังเกตอัตโนมัติจากเดือนล่าสุด"
+            >
+              {insights.length === 0 ? (
+                <EmptyNote>ยังไม่พบความผิดปกติที่น่าสังเกตในเดือนล่าสุด</EmptyNote>
+              ) : (
+                <ul className="space-y-3">
+                  {insights.map((insight) => {
+                    const Icon = insightTypeIcon[insight.insightType] ?? AlertTriangle;
+                    return (
+                      <li key={insight.id}>
+                        <Link
+                          href={`/transactions?category=${encodeURIComponent(insight.category)}&month=${insight.month}`}
+                          className="flex items-start gap-3 group"
+                        >
+                          <span className="mt-0.5 shrink-0 text-accent">
+                            <Icon size={16} aria-hidden="true" />
+                          </span>
+                          <div>
+                            <p className="text-xs font-medium text-gray-400 mb-0.5">
+                              {insightTypeLabel[insight.insightType] ?? insight.insightType} ·{" "}
+                              {insight.month}
+                            </p>
+                            <p className="text-sm text-gray-700 dark:text-gray-200 group-hover:text-[#7F77DD] group-hover:underline">
+                              {insight.summary}
+                            </p>
+                          </div>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </Panel>
+
+            <Panel
+              title="ควรทำอะไรต่อ (Prescriptive)"
+              caption="คำแนะนำจาก rule engine — กดถูกเมื่อทำแล้ว"
+            >
+              {recs.length === 0 ? (
+                <EmptyNote>ยังไม่มีคำแนะนำในขณะนี้ — ระบบจะแนะนำเมื่อพบสิ่งที่น่าสนใจ</EmptyNote>
+              ) : (
+                <ul className="space-y-3">
+                  {recs.map((rec) => (
+                    <li
+                      key={rec.id}
+                      className="flex items-start justify-between gap-3 border-b border-gray-50 dark:border-gray-700/50 pb-3 last:border-0 last:pb-0"
+                    >
+                      <div className="flex items-start gap-2.5">
+                        <Lightbulb size={16} className="text-accent mt-0.5 shrink-0" aria-hidden="true" />
+                        <div>
+                          <span
+                            className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded mb-1 ${
+                              priorityStyle[rec.priority] ?? priorityStyle.low
+                            }`}
+                          >
+                            {priorityLabel[rec.priority] ?? rec.priority}
+                          </span>
+                          <p className="text-sm text-gray-700 dark:text-gray-200">{rec.action}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => handleRecAction(rec.id, "APPLIED")}
+                          title="ดำเนินการแล้ว"
+                          className="p-1.5 rounded-md text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors cursor-pointer"
+                        >
+                          <CheckCircle2 size={16} aria-hidden="true" />
+                        </button>
+                        <button
+                          onClick={() => handleRecAction(rec.id, "DISMISSED")}
+                          title="ไม่สนใจ"
+                          className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
+                        >
+                          <XCircle size={16} aria-hidden="true" />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
+          </div>
+
+          {/* ── Detail: forecast method ────────────────────────────────────── */}
+          {snapshot && (
+            <Panel title="รายละเอียดการพยากรณ์ (Predictive)">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs text-gray-400">เดือนที่พยากรณ์</p>
+                  <p className="text-base font-semibold text-gray-800 dark:text-gray-100">
+                    {snapshot.forecastMonth}
+                  </p>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div>
+                  <p className="text-xs text-gray-400">ช่วงความเป็นไปได้</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    {formatCurrency(snapshot.confidenceLow)} ถึง {formatCurrency(snapshot.confidenceHigh)}
+                  </p>
+                </div>
+                <div className="sm:text-right">
                   <button
-                    onClick={() => handleRecAction(rec.id, "APPLIED")}
-                    title="ดำเนินการแล้ว"
-                    className="p-1.5 rounded-md text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                    onClick={handleRunForecast}
+                    className="text-xs font-medium text-accent hover:underline cursor-pointer"
                   >
-                    <CheckCircle2 size={16} aria-hidden="true" />
-                  </button>
-                  <button
-                    onClick={() => handleRecAction(rec.id, "DISMISSED")}
-                    title="ไม่สนใจ"
-                    className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                  >
-                    <XCircle size={16} aria-hidden="true" />
+                    คำนวณใหม่จากข้อมูลล่าสุด
                   </button>
                 </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+              </div>
+              <p className="text-xs text-gray-400 border-t border-gray-100 dark:border-gray-700 pt-2 mt-3">
+                วิธีคิด: {snapshot.inputWindow?.disclaimer ?? "ใช้ค่าเฉลี่ยถ่วงน้ำหนัก (WMA) — ไม่ใช่ AI"}
+              </p>
+            </Panel>
+          )}
+        </>
+      )}
 
       <p className="text-xs text-gray-400 text-center pt-2">
         การพยากรณ์ทั้งหมดใช้ค่าเฉลี่ยถ่วงน้ำหนัก (Weighted Moving Average) และดัชนีฤดูกาล — ไม่ใช่ AI หรือ Machine
