@@ -113,7 +113,9 @@
       "Bash(git push *)",
       "Bash(gh pr create --title 'feat: Business Layer drill-down views, civic data fixes, and landing/dashboard UI overhaul' --body ' *)",
       "Bash(gh --version)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git fetch *)",
+      "Bash(env)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Mam23\\OneDrive\\เอกสาร\\GitHub\\ouran_ratsadon\\apps\\web",

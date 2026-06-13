@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { recomputeMonthlySummary } from "@/lib/analytics/summary";
 import { recomputeDiagnosticInsights } from "@/lib/analytics/diagnose";
 import { recomputeRecommendations } from "@/lib/analytics/recommend";
+import { checkOverBudgetAlerts } from "@/lib/alert-triggers";
 
 // Strip digits (dates, ref numbers) and collapse whitespace so the rule
 // matches the same vendor/description across months, not just this exact row.
@@ -76,6 +77,7 @@ export async function PATCH(
     await recomputeMonthlySummary(auth.userId);
     await recomputeDiagnosticInsights(auth.userId);
     await recomputeRecommendations(auth.userId);
+    await checkOverBudgetAlerts(auth.userId);
   } catch (err) {
     console.error("analytics recompute failed after category override:", err);
   }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -191,6 +192,11 @@ export default function AnalyticsPage() {
     fetcher
   );
 
+  // Empty = focus the latest month; otherwise focus the chosen month for the
+  // KPI cards, category breakdown and diagnostic panel. The trend chart always
+  // shows the full range.
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+
   const isLoading =
     summary.isLoading || diagnostics.isLoading || forecastQ.isLoading || recommendations.isLoading;
 
@@ -204,9 +210,23 @@ export default function AnalyticsPage() {
   }
 
   const months = summary.data?.months ?? [];
-  const latest = months[months.length - 1];
-  const previous = months.length > 1 ? months[months.length - 2] : null;
-  const insights = diagnostics.data?.insights ?? [];
+  // Months available for the filter dropdown — latest first.
+  const availableMonths = months.map((m) => m.month).slice().reverse();
+  // Resolve the focused month: explicit selection if it still exists in the
+  // current range, otherwise fall back to the latest month.
+  const focusIdx = (() => {
+    if (selectedMonth) {
+      const i = months.findIndex((m) => m.month === selectedMonth);
+      if (i !== -1) return i;
+    }
+    return months.length - 1;
+  })();
+  const latest = months[focusIdx];
+  const previous = focusIdx > 0 ? months[focusIdx - 1] : null;
+  // Tie the diagnostic panel to the focused month so "why" matches the numbers.
+  const insights = (diagnostics.data?.insights ?? []).filter(
+    (i) => !latest || i.month === latest.month
+  );
   const snapshot = forecastQ.data?.snapshot ?? null;
   const recs = recommendations.data?.recommendations ?? [];
 
@@ -242,14 +262,32 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          <span className="text-gradient-accent">วิเคราะห์</span>{" "}
-          <span className="text-gray-900 dark:text-gray-100">เชิงลึก</span>
-        </h1>
-        <p className="text-sm text-gray-400 mt-0.5">
-          ภาพรวมก่อน เจาะลึกทีหลัง — เกิดอะไรขึ้น ทำไม แนวโน้ม และควรทำอะไรต่อ
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            <span className="text-gradient-accent">วิเคราะห์</span>{" "}
+            <span className="text-gray-900 dark:text-gray-100">เชิงลึก</span>
+          </h1>
+          <p className="text-sm text-gray-400 mt-0.5">
+            ภาพรวมก่อน เจาะลึกทีหลัง — เกิดอะไรขึ้น ทำไม แนวโน้ม และควรทำอะไรต่อ
+          </p>
+        </div>
+        {availableMonths.length > 0 && (
+          <label className="flex items-center gap-2 text-sm">
+            <span className="text-gray-400">เดือนที่เจาะลึก</span>
+            <select
+              value={selectedMonth || (latest?.month ?? "")}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="text-sm px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#7F77DD]/30 cursor-pointer"
+            >
+              {availableMonths.map((m) => (
+                <option key={m} value={m}>
+                  {monthLabel(m)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
 
       {months.length === 0 ? (
@@ -518,7 +556,7 @@ export default function AnalyticsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Panel
               title="ทำไมถึงเกิดขึ้น (Diagnostic)"
-              caption="ข้อสังเกตอัตโนมัติจากเดือนล่าสุด"
+              caption={latest ? `ข้อสังเกตอัตโนมัติของเดือน ${monthLabel(latest.month)}` : "ข้อสังเกตอัตโนมัติ"}
             >
               {insights.length === 0 ? (
                 <EmptyNote>ยังไม่พบความผิดปกติที่น่าสังเกตในเดือนล่าสุด</EmptyNote>

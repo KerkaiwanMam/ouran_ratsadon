@@ -10,8 +10,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Check,
-  TrendingUp,
-  TrendingDown,
   Scale,
   ArrowDownLeft,
   ArrowUpRight,
@@ -22,6 +20,17 @@ import KeywordCloud from "@/components/shared/KeywordCloud";
 import type { KeywordCount } from "@/lib/keywords";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+const THAI_MONTHS_SHORT = [
+  "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
+  "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
+];
+
+function monthLabel(m: string) {
+  const [y, mm] = m.split("-");
+  const idx = parseInt(mm, 10) - 1;
+  return `${THAI_MONTHS_SHORT[idx] ?? mm} ${y?.slice(2) ?? ""}`;
+}
 
 interface TransactionItem {
   id: string;
@@ -180,6 +189,18 @@ function TransactionsContent() {
     fetcher
   );
 
+  // Months that actually have data — powers the month filter dropdown.
+  // Reuses the descriptive-summary endpoint (one row per month) instead of a
+  // separate distinct-months query on the transactions API.
+  const monthsQ = useSWR<{ months: { month: string }[] }>(
+    "/api/business/analytics/summary?range=24",
+    fetcher
+  );
+  const availableMonths = (monthsQ.data?.months ?? [])
+    .map((m) => m.month)
+    .sort()
+    .reverse();
+
   async function handleCategorySave(id: string, newCategory: string) {
     const res = await fetch(`/api/business/transactions/${id}`, {
       method: "PATCH",
@@ -208,7 +229,7 @@ function TransactionsContent() {
   const activeFilters: { key: string; label: string }[] = [];
   if (category) activeFilters.push({ key: "category", label: `หมวดหมู่: ${category}` });
   if (leakFlag) activeFilters.push({ key: "leakFlag", label: `สถานะ: ${statusLabel}` });
-  if (month) activeFilters.push({ key: "month", label: `เดือน: ${month}` });
+  if (month) activeFilters.push({ key: "month", label: `เดือน: ${monthLabel(month)}` });
   if (search) activeFilters.push({ key: "search", label: `ค้นหา: "${search}"` });
 
   return (
@@ -260,6 +281,19 @@ function TransactionsContent() {
           ))}
         </select>
 
+        <select
+          value={month}
+          onChange={(e) => updateParams({ month: e.target.value || null, page: null })}
+          className="text-sm px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#7F77DD]/30 cursor-pointer"
+        >
+          <option value="">ทุกเดือน</option>
+          {availableMonths.map((m) => (
+            <option key={m} value={m}>
+              {monthLabel(m)}
+            </option>
+          ))}
+        </select>
+
         {activeFilters.map((f) => (
           <button
             key={f.key}
@@ -281,7 +315,65 @@ function TransactionsContent() {
         )}
       </div>
 
-      {/* results toolbar — view toggle + filtered totals, outside the table
+      {/* Filtered totals as cards — income/expense/net for whatever the
+          current filters select, so the user sees the money picture clearly
+          before scanning the table. */}
+      {data && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+          <div className="relative overflow-hidden surface-glass rounded-2xl px-4 py-3.5">
+            <span className="absolute inset-x-0 top-0 h-0.5 bg-emerald-500/70" aria-hidden="true" />
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-gray-500 dark:text-gray-400">รายรับ</p>
+              <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400">
+                <ArrowDownLeft size={15} aria-hidden="true" />
+              </span>
+            </div>
+            <p className="text-2xl font-black leading-none mt-2 text-emerald-600 dark:text-emerald-400">
+              {formatCurrency(data.summary.totalIncome)}
+            </p>
+          </div>
+
+          <div className="relative overflow-hidden surface-glass rounded-2xl px-4 py-3.5">
+            <span className="absolute inset-x-0 top-0 h-0.5 bg-red-500/70" aria-hidden="true" />
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-gray-500 dark:text-gray-400">รายจ่าย</p>
+              <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400">
+                <ArrowUpRight size={15} aria-hidden="true" />
+              </span>
+            </div>
+            <p className="text-2xl font-black leading-none mt-2 text-red-600 dark:text-red-400">
+              {formatCurrency(Math.abs(data.summary.totalExpense))}
+            </p>
+          </div>
+
+          <div className="relative overflow-hidden surface-glass rounded-2xl px-4 py-3.5">
+            <span
+              className={`absolute inset-x-0 top-0 h-0.5 ${
+                data.summary.net >= 0 ? "bg-gradient-accent" : "bg-red-500/70"
+              }`}
+              aria-hidden="true"
+            />
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-gray-500 dark:text-gray-400">คงเหลือสุทธิ</p>
+              <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#7F77DD]/10 text-[#7F77DD]">
+                <Scale size={15} aria-hidden="true" />
+              </span>
+            </div>
+            <p
+              className={`text-2xl font-black leading-none mt-2 ${
+                data.summary.net >= 0
+                  ? "text-gray-900 dark:text-gray-100"
+                  : "text-red-600 dark:text-red-400"
+              }`}
+            >
+              {data.summary.net >= 0 ? "+" : "−"}
+              {formatCurrency(Math.abs(data.summary.net))}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* results toolbar — view toggle + result count, outside the table
           and grouped with the filters above */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-1 bg-gray-50 dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700">
@@ -308,32 +400,9 @@ function TransactionsContent() {
         </div>
 
         {data && (
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400">
-              <TrendingUp size={14} />
-              <span>รับ {formatCurrency(data.summary.totalIncome)}</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400">
-              <TrendingDown size={14} />
-              <span>จ่าย {formatCurrency(Math.abs(data.summary.totalExpense))}</span>
-            </div>
-            <div
-              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg ${
-                data.summary.net >= 0
-                  ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400"
-                  : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400"
-              }`}
-            >
-              <Scale size={14} />
-              <span>
-                สุทธิ {data.summary.net >= 0 ? "+" : "-"}
-                {formatCurrency(Math.abs(data.summary.net))}
-              </span>
-            </div>
-            <span className="text-xs text-gray-400 whitespace-nowrap">
-              {data.total.toLocaleString()} รายการ
-            </span>
-          </div>
+          <span className="text-xs text-gray-400 whitespace-nowrap">
+            พบ {data.total.toLocaleString()} รายการ
+          </span>
         )}
       </div>
 

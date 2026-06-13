@@ -7,7 +7,18 @@ import StatusBadge from "@/components/shared/StatusBadge";
 import SpendingPieChart from "@/components/charts/SpendingPieChart";
 import BudgetVsActual from "@/components/business/BudgetVsActual";
 import Link from "next/link";
-import { Upload, Loader2, ArrowUpRight } from "lucide-react";
+import {
+  Upload,
+  Loader2,
+  ArrowUpRight,
+  Lightbulb,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Sparkles,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -76,6 +87,40 @@ interface TopLeak {
   leakReason: string | null;
 }
 
+interface DiagnosticInsight {
+  id: string;
+  month: string;
+  category: string;
+  insightType: string;
+  summary: string;
+  relatedTxIds: string[];
+  createdAt: string;
+}
+
+interface Recommendation {
+  id: string;
+  basedOn: string;
+  basedOnId: string;
+  action: string;
+  priority: string;
+  status: string;
+  createdAt: string;
+}
+
+const insightTypeIcon: Record<string, React.ElementType> = {
+  category_spike: TrendingUp,
+  new_vendor_surge: Sparkles,
+  seasonal_drop: TrendingDown,
+};
+
+const priorityStyle: Record<string, string> = {
+  high: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
+  medium: "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400",
+  low: "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400",
+};
+
+const priorityLabel: Record<string, string> = { high: "สำคัญมาก", medium: "ควรดู", low: "ทั่วไป" };
+
 interface DashboardResponse {
   hasData: boolean;
   summary: {
@@ -121,6 +166,14 @@ export default function DashboardPage() {
     }
   );
   const trend = useSWR<TrendSummary>("/api/business/analytics/summary?range=6", fetcher);
+  const diagnostics = useSWR<{ insights: DiagnosticInsight[] }>(
+    "/api/business/analytics/diagnose?limit=3",
+    fetcher
+  );
+  const recommendations = useSWR<{ recommendations: Recommendation[] }>(
+    "/api/business/analytics/recommendations?status=PENDING",
+    fetcher
+  );
 
   if (isLoading) {
     return (
@@ -185,6 +238,45 @@ export default function DashboardPage() {
   const topCategory = categories.length > 0
     ? [...categories].sort((a, b) => b.amount - a.amount)[0]
     : null;
+
+  // Narrative summary card — use the most relevant diagnostic insight if one
+  // exists, otherwise fall back to a sentence computed from this month vs
+  // last month's expense trend.
+  const insights = diagnostics.data?.insights ?? [];
+  const topInsight = insights[0] ?? null;
+  const recs = recommendations.data?.recommendations ?? [];
+
+  let NarrativeIcon: React.ElementType = Sparkles;
+  let narrativeText = "";
+  let narrativeHref: string | null = null;
+
+  if (topInsight) {
+    NarrativeIcon = insightTypeIcon[topInsight.insightType] ?? AlertTriangle;
+    narrativeText = topInsight.summary;
+    narrativeHref = `/transactions?category=${encodeURIComponent(topInsight.category)}&month=${topInsight.month}`;
+  } else if (curMonth && prevMonth && prevMonth.totalExpense > 0) {
+    const diff = curMonth.totalExpense - prevMonth.totalExpense;
+    const pct = (diff / prevMonth.totalExpense) * 100;
+    NarrativeIcon = diff > 0 ? TrendingUp : TrendingDown;
+    narrativeText =
+      diff > 0
+        ? `เดือนนี้ค่าใช้จ่ายเพิ่มขึ้น ${pct.toFixed(0)}% จากเดือนก่อน (+${formatCurrency(Math.abs(diff))})`
+        : `เดือนนี้ค่าใช้จ่ายลดลง ${Math.abs(pct).toFixed(0)}% จากเดือนก่อน (-${formatCurrency(Math.abs(diff))})`;
+  } else {
+    NarrativeIcon = netCashFlow >= 0 ? TrendingUp : TrendingDown;
+    narrativeText = `กระแสเงินสดสุทธิเดือนนี้${netCashFlow >= 0 ? "เป็นบวก" : "เป็นลบ"}ที่ ${formatCurrency(
+      Math.abs(netCashFlow)
+    )}`;
+  }
+
+  async function handleRecAction(id: string, status: "APPLIED" | "DISMISSED") {
+    await fetch(`/api/business/analytics/recommendations/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    recommendations.mutate();
+  }
 
   return (
     <div>
@@ -590,6 +682,80 @@ export default function DashboardPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Narrative summary + Actionable Today — secondary context, below the
+          recent transactions so the headline numbers come first */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+        <div className="relative overflow-hidden surface-glass rounded-2xl px-5 py-4">
+          <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent" aria-hidden="true" />
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 shrink-0 text-accent">
+              <NarrativeIcon size={18} aria-hidden="true" />
+            </span>
+            <div>
+              <p className="text-xs font-medium text-gray-400 mb-1">สรุปสถานการณ์</p>
+              <p className="text-sm text-gray-700 dark:text-gray-200">{narrativeText}</p>
+              {narrativeHref && (
+                <Link href={narrativeHref} className="text-xs text-accent hover:underline mt-1.5 inline-block">
+                  ดูรายการที่เกี่ยวข้อง →
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="relative overflow-hidden surface-glass rounded-2xl">
+          <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent opacity-60" aria-hidden="true" />
+          <div className="px-5 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+            <h3 className="text-sm font-bold">ทำวันนี้ได้เลย</h3>
+            <Link href="/analytics" className="text-xs text-accent hover:underline inline-flex items-center gap-0.5">
+              ดูทั้งหมด
+              <ArrowUpRight size={12} aria-hidden="true" />
+            </Link>
+          </div>
+          <div className="p-4">
+            {recs.length === 0 ? (
+              <p className="text-sm text-gray-400 py-2 text-center">ยังไม่มีคำแนะนำในขณะนี้</p>
+            ) : (
+              <ul className="space-y-3">
+                {recs.slice(0, 3).map((rec) => (
+                  <li key={rec.id} className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2.5">
+                      <Lightbulb size={16} className="text-accent mt-0.5 shrink-0" aria-hidden="true" />
+                      <div>
+                        <span
+                          className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded mb-1 ${
+                            priorityStyle[rec.priority] ?? priorityStyle.low
+                          }`}
+                        >
+                          {priorityLabel[rec.priority] ?? rec.priority}
+                        </span>
+                        <p className="text-sm text-gray-700 dark:text-gray-200">{rec.action}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleRecAction(rec.id, "APPLIED")}
+                        title="ดำเนินการแล้ว"
+                        className="p-1.5 rounded-md text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors cursor-pointer"
+                      >
+                        <CheckCircle2 size={16} aria-hidden="true" />
+                      </button>
+                      <button
+                        onClick={() => handleRecAction(rec.id, "DISMISSED")}
+                        title="ไม่สนใจ"
+                        className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
+                      >
+                        <XCircle size={16} aria-hidden="true" />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
     </div>
