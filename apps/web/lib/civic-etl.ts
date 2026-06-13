@@ -81,6 +81,7 @@ interface ProjectAccum {
   catAmounts: Map<string, number>; // categoryLv1 → summed amount — used to pick dominant type
   plan: string;
   projectName: string;
+  itemAmounts: Map<string, number>; // itemDescription ("ชื่อรายการ") → summed amount, insertion-ordered
 }
 
 type ProjectKey = string; // "ministry|||dept|||projectName"
@@ -141,6 +142,7 @@ export async function buildAndPersistCivicYear(
         catAmounts: new Map(),
         plan: row.budgetPlan,
         projectName,
+        itemAmounts: new Map(),
       });
     }
 
@@ -148,9 +150,35 @@ export async function buildAndPersistCivicYear(
     acc.amount += row.amount;
     const cat = row.categoryLv1 || "อื่นๆ";
     acc.catAmounts.set(cat, (acc.catAmounts.get(cat) ?? 0) + row.amount);
+
+    // ITEM_DESCRIPTION ("ชื่อรายการ") — the numbered "(1) ... (2) ..." sub-items
+    // shown under a project in the source PDF. Not every row has one; the same
+    // item name can span multiple rows, so sum their amounts. Map preserves
+    // first-seen order.
+    if (!isBlank(row.itemDescription)) {
+      const item = row.itemDescription!.trim();
+      acc.itemAmounts.set(item, (acc.itemAmounts.get(item) ?? 0) + row.amount);
+    }
   }
 
   // ── Build tree ────────────────────────────────────────────────────────────
+  // slugify() truncates to 30 chars, so distinct long names (e.g. two
+  // similarly-worded projects in the same department) can collide on the
+  // same slug. Track every id handed out and suffix "-2", "-3", ... on
+  // collision so ids stay unique (used as React keys and DB primary keys).
+  const usedIds = new Set<string>();
+  function uniqueId(base: string): string {
+    if (!usedIds.has(base)) {
+      usedIds.add(base);
+      return base;
+    }
+    let i = 2;
+    while (usedIds.has(`${base}-${i}`)) i++;
+    const id = `${base}-${i}`;
+    usedIds.add(id);
+    return id;
+  }
+
   const ministries: BudgetMinistry[] = [];
   let colorIdx = 0;
 
@@ -192,13 +220,17 @@ export async function buildAndPersistCivicYear(
         // detail page and to red-flag descriptions.
         const categoryName = (!isBlank(dominantCat) ? dominantCat : null) ?? undefined;
         projects.push({
-          id: `p-${ministrySlug}-${deptSlug}-${projectSlug}`,
+          id: uniqueId(`p-${ministrySlug}-${deptSlug}-${projectSlug}`),
           name: projectName,
           amount: acc.amount,
           previous_amount: prevAmount,
           change_pct: changePct,
           budget_type: categoryToBudgetType(dominantCat),
           category_name: categoryName,
+          items:
+            acc.itemAmounts.size > 0
+              ? Array.from(acc.itemAmounts, ([name, amount]) => ({ name, amount }))
+              : undefined,
           province: "",
           plan_name: acc.plan,
           flags: [],
@@ -211,7 +243,7 @@ export async function buildAndPersistCivicYear(
       projects.sort((a, b) => b.amount - a.amount);
 
       departments.push({
-        id: `d-${ministrySlug}-${deptSlug}`,
+        id: uniqueId(`d-${ministrySlug}-${deptSlug}`),
         name: deptName,
         budget: deptTotal,
         projects,
@@ -222,7 +254,7 @@ export async function buildAndPersistCivicYear(
     departments.sort((a, b) => b.budget - a.budget);
 
     ministries.push({
-      id: `m-${ministrySlug}`,
+      id: uniqueId(`m-${ministrySlug}`),
       name: ministryName,
       budget: ministryTotal,
       color_category: COLOR_CYCLE[colorIdx % COLOR_CYCLE.length],
