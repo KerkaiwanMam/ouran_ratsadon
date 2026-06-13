@@ -59,7 +59,27 @@ const CATEGORIES: { pattern: RegExp; category: string }[] = [
   { pattern: /อุปกรณ์|เครื่องมือ|equipment|tool/i, category: "อุปกรณ์" },
 ];
 
-export function categorize(description: string): { category: string; autoCategorized: boolean } {
+export interface UserCategoryRule {
+  keyword: string;
+  category: string;
+}
+
+/**
+ * Categorize a transaction description. User-defined CategoryRule rows
+ * (learned from past category overrides) take priority over the built-in
+ * keyword patterns — `rules` should be pre-sorted by priority/usageCount
+ * (most-trusted first) by the caller.
+ */
+export function categorize(
+  description: string,
+  rules: UserCategoryRule[] = []
+): { category: string; autoCategorized: boolean } {
+  const lowerDesc = description.toLowerCase();
+  for (const rule of rules) {
+    if (rule.keyword && lowerDesc.includes(rule.keyword.toLowerCase())) {
+      return { category: rule.category, autoCategorized: true };
+    }
+  }
   for (const { pattern, category } of CATEGORIES) {
     if (pattern.test(description)) {
       return { category, autoCategorized: true };
@@ -100,7 +120,15 @@ export async function finalizeFileUpload(
   transactions: RawTx[],
   userId: string
 ): Promise<FinalizeResult> {
-  const leakResults = detectLeaks(transactions, (desc) => categorize(desc).category);
+  // User-taught rules (from past category overrides) win over the built-in
+  // keyword patterns — most-trusted (highest priority/usage) first.
+  const userRules = await prisma.categoryRule.findMany({
+    where: { userId },
+    orderBy: [{ priority: "desc" }, { usageCount: "desc" }],
+    select: { keyword: true, category: true },
+  });
+
+  const leakResults = detectLeaks(transactions, (desc) => categorize(desc, userRules).category);
 
   // ── Row-level dedup: fingerprint each row, then compare against what this
   // user has already imported (across ALL their files, not just this one —
@@ -148,7 +176,7 @@ export async function finalizeFileUpload(
       return true;
     })
     .map(({ tx, rowHash, softKey, leak }) => {
-      const { category, autoCategorized } = categorize(tx.description);
+      const { category, autoCategorized } = categorize(tx.description, userRules);
 
       // Same date+description+type as something we already have, but the
       // amount/category differs → likely a corrected re-export. Insert it

@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import type { Transaction } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getLatestForecastSnapshot } from "@/lib/analytics/predict";
+
+const SEVERITY_RANK: Record<string, number> = { CRITICAL: 2, WARNING: 1, INFO: 0 };
 
 // GET /api/business/dashboard
 // Aggregates the current user's real uploaded transactions into the shape
@@ -42,8 +45,12 @@ export async function GET() {
         totalIncome: 0,
         totalExpense: 0,
         netCashFlow: 0,
+        burnRate: 0,
         categories: [],
         period: null,
+        cashRunwayMonths: null,
+        topLeak: null,
+        isPro: false,
       },
       transactions: [],
     });
@@ -130,14 +137,54 @@ export async function GET() {
     leakReason: t.leakReason,
   }));
 
+  // Burn rate — net cash outflow for the current month (0 if cash-flow positive).
+  const burnRate = netCashFlow < 0 ? Math.abs(netCashFlow) : 0;
+
+  // Top leak — the most severe flagged transaction this month (CRITICAL first,
+  // then by size), so the dashboard can surface "what to look at first".
+  const flagged = currentTx.filter((t) => t.leakFlag !== "NONE");
+  const topLeakTx = flagged.length
+    ? [...flagged].sort((a, b) => {
+        const sevDiff = (SEVERITY_RANK[b.leakSeverity ?? "INFO"] ?? 0) - (SEVERITY_RANK[a.leakSeverity ?? "INFO"] ?? 0);
+        if (sevDiff !== 0) return sevDiff;
+        return Math.abs(Number(b.amount)) - Math.abs(Number(a.amount));
+      })[0]
+    : null;
+  const topLeak = topLeakTx
+    ? {
+        id: topLeakTx.id,
+        description: topLeakTx.description,
+        category: topLeakTx.category,
+        amount: Number(topLeakTx.amount),
+        leakFlag: topLeakTx.leakFlag,
+        leakSeverity: topLeakTx.leakSeverity,
+        leakReason: topLeakTx.leakReason,
+      }
+    : null;
+
+  // Cash runway — Pro-only, read from the persisted ForecastSnapshot (WMA-based,
+  // not recomputed here — see /api/business/analytics/forecast for that).
+  const subscription = await prisma.subscription.findUnique({ where: { userId: payload.sub } });
+  const isPro = !!(
+    subscription &&
+    (subscription.plan === "PRO" || subscription.plan === "TEAM") &&
+    (subscription.status === "ACTIVE" || subscription.status === "TRIAL")
+  );
+  const snapshot = isPro ? await getLatestForecastSnapshot(payload.sub) : null;
+  const cashRunwayMonths = snapshot?.cashRunwayMonths ?? null;
+
   return NextResponse.json({
     hasData: true,
     summary: {
       totalIncome,
       totalExpense,
       netCashFlow,
+      burnRate,
       categories: categoriesWithBudget,
       period: currentMonth,
+      cashRunwayMonths,
+      topLeak,
+      isPro,
     },
     transactions: recent,
   });
