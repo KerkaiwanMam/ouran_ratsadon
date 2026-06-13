@@ -12,6 +12,7 @@ import { recomputeMonthlySummary } from "@/lib/analytics/summary";
 import { recomputeDiagnosticInsights } from "@/lib/analytics/diagnose";
 import { recomputeRecommendations } from "@/lib/analytics/recommend";
 import { sanitizeStringField } from "@/lib/file-sanitizer";
+import { triggerLeakAlerts, checkOverBudgetAlerts } from "@/lib/alert-triggers";
 
 export function hashFileBytes(buf: Buffer): string {
   return createHash("sha256").update(buf).digest("hex");
@@ -254,6 +255,17 @@ export async function finalizeFileUpload(
     await recomputeRecommendations(userId);
   } catch (err) {
     console.error("analytics recompute failed after upload:", err);
+  }
+
+  // In-app (+ email/LINE) alerts for what this upload surfaced — non-fatal,
+  // a failed notification shouldn't fail the upload response.
+  try {
+    const criticalCount = txData.filter((t) => t.leakSeverity === "CRITICAL").length;
+    const warningCount = txData.filter((t) => t.leakSeverity === "WARNING").length;
+    await triggerLeakAlerts(userId, fileRecord.id, criticalCount, warningCount);
+    await checkOverBudgetAlerts(userId);
+  } catch (err) {
+    console.error("alert triggers failed after upload:", err);
   }
 
   return {

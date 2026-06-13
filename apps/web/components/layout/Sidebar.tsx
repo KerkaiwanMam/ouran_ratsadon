@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import useSWR from "swr";
 import {
   BarChart3,
   LineChart,
@@ -16,8 +17,11 @@ import {
   ScrollText,
   Database,
   Receipt,
+  Bell,
 } from "lucide-react";
 import ThemeToggle from "@/components/shared/ThemeToggle";
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 interface SidebarProps {
   role?: "member" | "admin";
@@ -48,16 +52,39 @@ export default function Sidebar({ role = "member" }: SidebarProps) {
   const pathname = usePathname();
   const links = role === "admin" ? adminLinks : memberLinks;
 
+  const { data: alertsData } = useSWR<{ unreadCount: number }>(
+    role === "member" ? "/api/business/alerts" : null,
+    fetcher,
+    { refreshInterval: 30000 }
+  );
+  const unreadCount = alertsData?.unreadCount ?? 0;
+
   return (
     <aside className="fixed left-0 top-0 h-full w-[200px] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col py-5 px-3 z-40">
-      {/* Logo */}
-      <Link
-        href="/"
-        className="flex items-center gap-2 px-2 mb-7 text-base font-bold text-[#7F77DD] hover:opacity-80 transition-opacity"
-      >
-        <BarChart3 size={18} aria-hidden="true" />
-        <span>อุรัณ รัษฎร</span>
-      </Link>
+      {/* Logo + notifications */}
+      <div className="flex items-center justify-between gap-2 px-2 mb-7">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-base font-bold text-[#7F77DD] hover:opacity-80 transition-opacity"
+        >
+          <BarChart3 size={18} aria-hidden="true" />
+          <span>อุรัณ รัษฎร</span>
+        </Link>
+        {role === "member" && (
+          <Link
+            href="/settings/notifications"
+            aria-label={unreadCount > 0 ? `การแจ้งเตือน (${unreadCount} ใหม่)` : "การแจ้งเตือน"}
+            className="relative flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-[#7F77DD] transition-colors"
+          >
+            <Bell size={17} aria-hidden="true" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-[14px] h-[14px] px-0.5 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </Link>
+        )}
+      </div>
 
       {/* Nav links */}
       <nav className="flex flex-col gap-0.5 flex-1" aria-label="เมนูหลัก">
