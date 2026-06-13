@@ -260,11 +260,15 @@ export default async function MinistryDetailPage({ params, searchParams }: PageP
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
-                  {sortedDepts.map((d) => {
+                  {sortedDepts.map((d, i) => {
                     const pct = ministry.budget > 0 ? (d.budget / ministry.budget) * 100 : 0;
                     return (
+                      // Dept ids are truncated name-slugs in the source data, so
+                      // long names sharing a prefix (e.g. several มจธ./มจพ. campuses)
+                      // can collide. Suffix the index to keep React keys unique
+                      // without dropping the duplicate row from this transparency view.
                       <tr
-                        key={d.id}
+                        key={`${d.id}-${i}`}
                         className="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
                       >
                         <td className="px-4 py-3">
@@ -282,34 +286,11 @@ export default async function MinistryDetailPage({ params, searchParams }: PageP
                           <p className="font-mono tabular-nums text-sm text-gray-700 dark:text-gray-200">
                             {formatBudget(d.budget)}
                           </p>
-                          {/* Budget type mini-bar */}
-                          <div className="flex gap-px rounded-full overflow-hidden h-1.5 mt-1 w-24 ml-auto">
-                            {(Object.keys(BUDGET_TYPE_LABELS) as Array<keyof BudgetTypeBreakdown>)
-                              .filter((k) => d.budgetTypes[k] > 0)
-                              .map((k) => (
-                                <div
-                                  key={k}
-                                  title={BUDGET_TYPE_LABELS[k]}
-                                  style={{
-                                    flex: d.budgetTypes[k],
-                                    backgroundColor: BUDGET_TYPE_COLORS[k],
-                                  }}
-                                />
-                              ))}
-                          </div>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <div className="w-14 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
-                              <div
-                                className="h-1.5 rounded-full bg-[#7F77DD]"
-                                style={{ width: `${Math.min(pct, 100)}%` }}
-                              />
-                            </div>
-                            <span className="text-xs text-gray-500 w-9 text-right tabular-nums">
-                              {pct.toFixed(1)}%
-                            </span>
-                          </div>
+                          <span className="text-xs text-gray-500 tabular-nums">
+                            {pct.toFixed(1)}%
+                          </span>
                         </td>
                         <td className="px-4 py-3 text-center">
                           {d.redFlagCount > 0 ? (

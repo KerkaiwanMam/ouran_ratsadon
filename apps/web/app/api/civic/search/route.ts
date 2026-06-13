@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getBudgetYear, getAvailableYears, searchProjects } from "@/lib/civic-cache";
+import { countKeywords, BUDGET_PROJECT_KEYWORDS } from "@/lib/keywords";
 import type { SearchFilters, BudgetType } from "@/types/civic";
 
 export function GET(req: NextRequest) {
@@ -62,6 +63,14 @@ export function GET(req: NextRequest) {
     }))
     .sort((a, b) => b.amount - a.amount);
 
+  // Frequent keywords across the *currently filtered* project names —
+  // powers the "KeywordBudget" view (click a keyword to filter further).
+  const keywords = countKeywords(
+    allResults.map((p) => p.name),
+    BUDGET_PROJECT_KEYWORDS,
+    24
+  );
+
   return NextResponse.json({
     total,
     page,
@@ -72,6 +81,7 @@ export function GET(req: NextRequest) {
       avgIncreasePct: Math.round(avgIncreasePct * 10) / 10,
       newProjectCount: 0,
       categoryBreakdown,
+      keywords,
     },
     results,
   });
