@@ -697,11 +697,17 @@ export default function DashboardPage() {
             <div>
               <p className="text-xs font-medium text-gray-400 mb-1">สรุปสถานการณ์</p>
               <p className="text-sm text-gray-700 dark:text-gray-200">{narrativeText}</p>
-              {narrativeHref && (
-                <Link href={narrativeHref} className="text-xs text-accent hover:underline mt-1.5 inline-block">
-                  ดูรายการที่เกี่ยวข้อง →
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
+                {narrativeHref && (
+                  <Link href={narrativeHref} className="text-xs text-accent hover:underline inline-block">
+                    ดูรายการที่เกี่ยวข้อง →
+                  </Link>
+                )}
+                <Link href="/assistant" className="text-xs text-accent hover:underline inline-flex items-center gap-1">
+                  <Sparkles size={11} aria-hidden="true" />
+                  ถาม AI เพิ่มเติม
                 </Link>
-              )}
+              </div>
             </div>
           </div>
         </div>

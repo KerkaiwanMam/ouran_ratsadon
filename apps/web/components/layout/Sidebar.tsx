@@ -18,6 +18,8 @@ import {
   Database,
   Receipt,
   Bell,
+  Sparkles,
+  Map,
 } from "lucide-react";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 
@@ -32,6 +34,7 @@ const memberLinks = [
   { href: "/transactions", label: "รายการธุรกรรม", icon: Receipt },
   { href: "/analytics", label: "วิเคราะห์เชิงลึก", icon: LineChart },
   { href: "/vendors", label: "ผู้ให้บริการ", icon: Users, pro: true },
+  { href: "/assistant", label: "ผู้ช่วย AI", icon: Sparkles, pro: true },
   { href: "/upload", label: "อัปโหลดไฟล์", icon: Upload },
   { href: "/files", label: "ไฟล์ของฉัน", icon: FolderOpen },
   { href: "/files/compare", label: "เปรียบเทียบ", icon: GitCompare },
@@ -46,6 +49,7 @@ const adminLinks = [
   { href: "/admin/subscriptions", label: "การสมัครสมาชิก", icon: CreditCard },
   { href: "/admin/civic-data", label: "ชุดข้อมูลงบ", icon: Database },
   { href: "/admin/logs", label: "บันทึกระบบ", icon: ScrollText },
+  { href: "/admin/roadmap", label: "Roadmap & Plan", icon: Map },
 ];
 
 export default function Sidebar({ role = "member" }: SidebarProps) {

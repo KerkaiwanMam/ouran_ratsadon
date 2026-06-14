@@ -288,7 +288,7 @@ export default function LandingPage() {
                       href={`/ministry/${m.id}?year=${latestYear}`}
                       aria-hidden={isClone}
                       tabIndex={isClone ? -1 : undefined}
-                      className="w-[250px] shrink-0 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-400/40 rounded-xl p-3.5 transition-colors duration-200 group cursor-pointer"
+                      className="w-[250px] shrink-0 surface-glass !bg-white/5 hover:!bg-white/10 !border-white/10 hover:!border-amber-400/40 rounded-xl p-3.5 backdrop-blur-sm transition-colors duration-200 group cursor-pointer"
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <span
@@ -306,18 +306,15 @@ export default function LandingPage() {
                         ฿{(m.budget / 1e9).toLocaleString("th-TH", { maximumFractionDigits: 1 })}
                         <span className="text-[10px] font-semibold text-gray-500 ml-1">พันล้าน</span>
                       </p>
-                      <div className="flex items-center gap-2 mt-2.5">
-                        <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-amber-400 to-teal-400"
-                            style={{ width: `${Math.min(m.percentage, 100)}%` }}
-                          />
-                        </div>
-                        <span className="text-[10px] text-gray-500 tabular-nums shrink-0">
-                          {m.percentage.toFixed(1)}%
+                      <div className="flex items-center justify-between gap-2 mt-3">
+                        <span className="inline-flex items-baseline gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-400/15 to-teal-400/15 border border-white/10">
+                          <span className="text-xl font-black tabular-nums bg-gradient-to-r from-amber-400 to-teal-300 bg-clip-text text-transparent leading-none">
+                            {m.percentage.toFixed(1)}%
+                          </span>
+                          <span className="text-[10px] font-semibold text-gray-400">ของงบรวม</span>
                         </span>
                         {m.redFlagCount > 0 && (
-                          <span className="text-[10px] text-red-400 font-semibold shrink-0">
+                          <span className="text-[10px] text-red-400 font-semibold shrink-0 bg-red-400/10 border border-red-400/20 rounded-full px-2 py-0.5">
                             ⚑ {m.redFlagCount}
                           </span>
                         )}

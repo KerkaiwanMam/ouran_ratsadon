@@ -115,6 +115,20 @@ npm run dev
 
 เปิด [http://localhost:3000](http://localhost:3000) — Civic Layer ใช้งานได้ทันทีโดยไม่ต้อง login ส่วน Business Layer ต้องสมัครสมาชิกก่อน (ดูตัวอย่างไฟล์สำหรับทดสอบใน [`sample-data/`](./sample-data))
 
+### ⚠️ บริการเสริมที่มีค่าใช้จ่าย (Optional paid services)
+
+โปรเจกต์รันได้ฟรีทั้งหมดโดยปล่อยตัวแปรด้านล่างเป็นค่าว่าง (ฟีเจอร์ที่เกี่ยวข้องจะ degrade อย่างสุภาพ ไม่ crash) แต่ถ้าตั้งค่าเพื่อเปิดใช้ฟีเจอร์เต็มรูปแบบ จะมีค่าใช้จ่ายตามนี้:
+
+| Env var | บริการ | ค่าใช้จ่าย |
+|---|---|---|
+| `STRIPE_SECRET_KEY` | ชำระเงินสมาชิก Pro/Team | ฟรีถ้าใช้ `sk_test_...` (test mode) — โหมด live คิดค่าธรรมเนียมตาม transaction จริง |
+| `RESEND_API_KEY` | ส่งอีเมลแจ้งเตือน | ฟรี 3,000 อีเมล/เดือน เกินกว่านี้มีค่าใช้จ่าย |
+| `UPSTASH_REDIS_REST_URL` / `TOKEN` | Rate limiting แบบ distributed | ฟรี free tier — เกิน quota มีค่าใช้จ่าย |
+| `R2_ENDPOINT` / `R2_ACCESS_KEY_ID` / ... | Direct-to-storage file upload (Cloudflare R2) | ฟรี free tier (10GB storage + egress ฟรี) — เกิน quota มีค่าใช้จ่าย |
+| `DATABASE_URL` / `DIRECT_URL` (Neon) | ฐานข้อมูล Postgres | ฟรี free tier (0.5GB storage, auto-suspend) — เกิน quota มีค่าใช้จ่าย |
+
+> **ผู้ช่วย AI (`/assistant`)** ปัจจุบันตอบด้วย rule-based engine ภายใน (`lib/assistant/rules.ts`) — ไม่เรียก LLM ภายนอก ไม่มีค่าใช้จ่าย ไม่ต้องตั้งค่า API key ใดๆ การเชื่อมต่อ LLM ฟรี tier (เช่น Google Gemini) สำหรับคำถามแบบอิสระเป็นแผนในเฟสถัดไป
+
 ---
 
 ## บทเรียนที่ได้ (Lessons Learned)
