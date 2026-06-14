@@ -247,11 +247,10 @@ export default function UploadPage() {
           }),
         });
         const presignData = await presignRes.json() as {
-          mode?: "r2" | "local";
+          mode?: "firebase" | "local";
           fileId?: string;
-          url?: string;
-          fields?: Record<string, string>;
           uploadUrl?: string;
+          contentType?: string;
           message?: string;
         };
         if (!presignRes.ok) {
@@ -260,12 +259,13 @@ export default function UploadPage() {
           return;
         }
 
-        if (presignData.mode === "r2") {
-          const r2Form = new FormData();
-          Object.entries(presignData.fields ?? {}).forEach(([k, v]) => r2Form.append(k, v));
-          r2Form.append("file", selectedFile);
-          const r2Res = await fetch(presignData.url!, { method: "POST", body: r2Form });
-          if (!r2Res.ok) {
+        if (presignData.mode === "firebase") {
+          const firebaseRes = await fetch(presignData.uploadUrl!, {
+            method: "PUT",
+            headers: { "Content-Type": presignData.contentType! },
+            body: selectedFile,
+          });
+          if (!firebaseRes.ok) {
             setError("อัปโหลดไฟล์ไปยัง storage ไม่สำเร็จ");
             setStatus("error");
             return;

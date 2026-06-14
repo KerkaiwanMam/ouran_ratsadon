@@ -6,6 +6,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/format";
 import {
+  Skeleton,
+  KpiCardsSkeleton,
+  ChartPanelSkeleton,
+  TableSkeleton,
+} from "@/components/shared/Skeleton";
+import {
   ResponsiveContainer,
   ComposedChart,
   Bar,
@@ -20,7 +26,6 @@ import {
   Cell,
 } from "recharts";
 import {
-  Loader2,
   TrendingUp,
   TrendingDown,
   AlertTriangle,
@@ -218,9 +223,22 @@ export default function AnalyticsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-24 text-gray-400">
-        <Loader2 size={28} className="animate-spin mr-2" />
-        กำลังวิเคราะห์ข้อมูล...
+      <div className="space-y-5">
+        <div className="surface-glass rounded-2xl px-5 py-4 flex items-start gap-3">
+          <Skeleton className="w-5 h-5 rounded-full shrink-0 mt-0.5" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+        </div>
+        <KpiCardsSkeleton />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <ChartPanelSkeleton className="lg:col-span-2" />
+          <ChartPanelSkeleton />
+        </div>
+        <div className="surface-glass rounded-2xl overflow-hidden">
+          <TableSkeleton rows={5} cols={4} />
+        </div>
       </div>
     );
   }

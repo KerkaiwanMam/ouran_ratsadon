@@ -11,8 +11,8 @@
  * 2. UPLOADING orphans
  *    A file in UPLOADING means the presigned URL was issued but the client never
  *    confirmed the upload (network drop, browser close). The object may or may
- *    not exist in storage (R2 or local-disk dev fallback) — delete it before
- *    marking the row ERROR so we don't leave orphaned objects behind.
+ *    not exist in storage (Firebase or local-disk dev fallback) — delete it
+ *    before marking the row ERROR so we don't leave orphaned objects behind.
  *
  * Called from:
  *   GET /api/internal/cleanup-orphans  (protected by CRON_SECRET header)
@@ -62,7 +62,7 @@ export async function cleanupOrphanFiles(): Promise<CleanupResult> {
     errors.push(msg);
   }
 
-  // ── 2. UPLOADING orphans (pre-wired for R2 presigned URL flow) ────────────
+  // ── 2. UPLOADING orphans (pre-wired for Firebase signed URL flow) ────────
   const uploadingCutoff = new Date(now.getTime() - UPLOADING_TTL_MS);
   let uploadingFixed = 0;
 

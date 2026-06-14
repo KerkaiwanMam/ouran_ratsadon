@@ -4,14 +4,15 @@ import { FileSourceFormat } from "@prisma/client";
 import { requireAuth } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import { validateExtension, ALLOWED_EXTENSIONS } from "@/lib/file-sanitizer";
-import { hasR2, createPresignedUploadPost } from "@/lib/r2";
+import { hasFirebase, createSignedUploadUrl } from "@/lib/firebase-storage";
 
 // ─── POST /api/files/presign ─────────────────────────────────────────────────
 // Phase 3A — direct-to-storage upload, step 1 of 3 (presign → PUT → confirm).
 // Creates a File row (status UPLOADING) and returns instructions for the
-// client to upload bytes directly to Cloudflare R2 (or, in dev without R2
-// configured, to a local-disk fallback endpoint). The client never sends the
-// file body through this Next.js route, avoiding the Vercel ~4.5MB body limit.
+// client to upload bytes directly to Firebase Storage (or, in dev without
+// Firebase configured, to a local-disk fallback endpoint). The client never
+// sends the file body through this Next.js route, avoiding the Vercel
+// ~4.5MB body limit.
 export async function POST(req: NextRequest) {
   // requireAuth (not getCurrentUser) — verifies the user row still exists and
   // isn't banned, so a stale JWT can't reach the File insert and trip its FK.
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
   });
 
   // Only accept the client's contentType if it's in the allowlist for this
-  // extension — it gets baked into the presigned policy and stored on the R2
+  // extension — it gets baked into the signed URL and stored on the Firebase
   // object, so an arbitrary value (e.g. text/html) must not pass through.
   const allowedTypes = ALLOWED_EXTENSIONS[ext] ?? [];
   const claimedType =
@@ -113,22 +114,22 @@ export async function POST(req: NextRequest) {
       ? claimedType
       : allowedTypes[0] ?? "application/octet-stream";
 
-  if (hasR2) {
-    const presigned = await createPresignedUploadPost({
+  if (hasFirebase) {
+    const { url, contentType: signedContentType } = await createSignedUploadUrl({
       key: storageKey,
       contentType: resolvedContentType,
-      maxSizeBytes: maxSize,
+      expiresInSeconds: 60 * 15, // 15 min — larger files take longer than R2's 5 min
     });
     return NextResponse.json({
-      mode: "r2",
+      mode: "firebase",
       fileId: fileRecord.id,
-      url: presigned.url,
-      fields: presigned.fields,
+      uploadUrl: url,
+      contentType: signedContentType,
     });
   }
 
-  // Dev fallback: no R2 configured — client PUTs raw bytes to a local-disk
-  // endpoint that mimics the same presign → upload → confirm flow.
+  // Dev fallback: no Firebase configured — client PUTs raw bytes to a
+  // local-disk endpoint that mimics the same presign → upload → confirm flow.
   return NextResponse.json({
     mode: "local",
     fileId: fileRecord.id,

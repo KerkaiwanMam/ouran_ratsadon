@@ -1,11 +1,12 @@
 /**
  * Storage abstraction over the two upload targets used by the presign flow:
- * Cloudflare R2 (production) or local disk under uploads/ (dev fallback when
- * R2_* env vars are not set). Both branches are keyed by File.storageKey.
+ * Firebase Storage (production) or local disk under uploads/ (dev fallback
+ * when FIREBASE_* env vars are not set). Both branches are keyed by
+ * File.storageKey.
  */
 import { readFile, unlink } from "fs/promises";
 import path from "path";
-import { hasR2, getObjectBytes, deleteObject } from "@/lib/r2";
+import { hasFirebase, getObjectBytes, deleteObject } from "@/lib/firebase-storage";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 
@@ -23,12 +24,12 @@ export function resolveLocalStoragePath(storageKey: string): string {
 }
 
 export async function getStoredObjectBytes(storageKey: string): Promise<Buffer> {
-  if (hasR2) return getObjectBytes(storageKey);
+  if (hasFirebase) return getObjectBytes(storageKey);
   return readFile(resolveLocalStoragePath(storageKey));
 }
 
 export async function deleteStoredObject(storageKey: string): Promise<void> {
-  if (hasR2) {
+  if (hasFirebase) {
     await deleteObject(storageKey);
     return;
   }

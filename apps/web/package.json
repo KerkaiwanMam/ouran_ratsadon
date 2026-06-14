@@ -12,8 +12,6 @@
     "schema": "../../prisma/schema.prisma"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1065.0",
-    "@aws-sdk/s3-presigned-post": "^3.1065.0",
     "@prisma/client": "^5.22.0",
     "@types/bcryptjs": "^3.0.0",
     "@upstash/ratelimit": "^2.0.8",
@@ -21,6 +19,7 @@
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "firebase-admin": "^14.0.0",
     "jose": "^6.2.3",
     "lucide-react": "^0.511.0",
     "next": "^16.2.6",

@@ -6,10 +6,15 @@ import { formatCurrency } from "@/utils/format";
 import StatusBadge from "@/components/shared/StatusBadge";
 import SpendingPieChart from "@/components/charts/SpendingPieChart";
 import BudgetVsActual from "@/components/business/BudgetVsActual";
+import BudgetAlertBanner from "@/components/business/BudgetAlertBanner";
+import {
+  KpiCardsSkeleton,
+  ChartPanelSkeleton,
+  TableSkeleton,
+} from "@/components/shared/Skeleton";
 import Link from "next/link";
 import {
   Upload,
-  Loader2,
   ArrowUpRight,
   Lightbulb,
   CheckCircle2,
@@ -177,9 +182,15 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-24 text-gray-400">
-        <Loader2 size={28} className="animate-spin mr-2" />
-        กำลังโหลดข้อมูล...
+      <div className="space-y-5">
+        <KpiCardsSkeleton />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <ChartPanelSkeleton className="lg:col-span-2" />
+          <ChartPanelSkeleton />
+        </div>
+        <div className="surface-glass rounded-2xl overflow-hidden">
+          <TableSkeleton rows={6} cols={5} />
+        </div>
       </div>
     );
   }
@@ -300,6 +311,10 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* Budget threshold alert — over/near-budget categories (PRO), surfaced
+          first so the user catches overspend before scanning the numbers. */}
+      <BudgetAlertBanner categories={categories} period={period} isPro={isPro} />
 
       {/* KPI row — net cash flow leads, supporting numbers follow */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

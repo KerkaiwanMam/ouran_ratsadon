@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 import Link from "next/link";
-import { Loader2, Lock, Search, ChevronLeft, ChevronRight, ArrowUpRight, ArrowDownRight, Sparkles } from "lucide-react";
+import { Lock, Search, ChevronLeft, ChevronRight, ArrowUpRight, ArrowDownRight, Sparkles } from "lucide-react";
 import { formatCurrency } from "@/utils/format";
+import { TableSkeleton } from "@/components/shared/Skeleton";
 import {
   LineChart,
   Line,
@@ -260,12 +261,7 @@ export default function VendorsPage() {
           </span>
         </div>
 
-        {isLoading && (
-          <div className="flex items-center justify-center py-16 text-gray-400">
-            <Loader2 size={24} className="animate-spin mr-2" />
-            กำลังโหลดข้อมูล...
-          </div>
-        )}
+        {isLoading && <TableSkeleton rows={6} cols={4} />}
 
         {data && !isLoading && data.vendors.length === 0 && (
           <div className="text-center py-16 text-gray-400 text-sm">

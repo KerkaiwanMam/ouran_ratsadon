@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/utils/format";
 import StatusBadge from "@/components/shared/StatusBadge";
+import { TableSkeleton } from "@/components/shared/Skeleton";
 import KeywordCloud from "@/components/shared/KeywordCloud";
 import type { KeywordCount } from "@/lib/keywords";
 
@@ -108,6 +109,9 @@ function CategoryCell({
       await onSave(tx.id, next);
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 1500);
+    } catch {
+      // SWR already rolled the optimistic change back (the select reverts to
+      // the previous category) — no success check shown.
     } finally {
       setSaving(false);
     }
@@ -201,15 +205,37 @@ function TransactionsContent() {
     .sort()
     .reverse();
 
+  // Optimistic override: reflect the new category in the table immediately,
+  // then revalidate so the filtered totals / summary catch up. SWR rolls the
+  // row back (and rethrows) if the PATCH fails — CategoryCell catches it.
   async function handleCategorySave(id: string, newCategory: string) {
-    const res = await fetch(`/api/business/transactions/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ category: newCategory }),
-    });
-    if (res.ok) {
-      await mutate();
-    }
+    await mutate(
+      async (current?: TransactionsResponse) => {
+        const res = await fetch(`/api/business/transactions/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ category: newCategory }),
+        });
+        if (!res.ok) throw new Error("category_save_failed");
+        return current; // keep the optimistic row; revalidate syncs totals
+      },
+      {
+        optimisticData: (current?: TransactionsResponse) =>
+          current
+            ? {
+                ...current,
+                items: current.items.map((t) =>
+                  t.id === id
+                    ? { ...t, category: newCategory, userOverrode: true, autoCategorized: false }
+                    : t
+                ),
+              }
+            : current!,
+        rollbackOnError: true,
+        populateCache: false,
+        revalidate: true,
+      }
+    );
   }
 
   // KeywordBudget view — clicking a keyword filters the list to that term
@@ -409,12 +435,7 @@ function TransactionsContent() {
       <div className="relative surface-glass rounded-2xl overflow-hidden">
         <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent" aria-hidden="true" />
 
-        {isLoading && (
-          <div className="flex items-center justify-center py-16 text-gray-400">
-            <Loader2 size={24} className="animate-spin mr-2" />
-            กำลังโหลดข้อมูล...
-          </div>
-        )}
+        {isLoading && <TableSkeleton rows={8} cols={5} />}
 
         {error && !isLoading && (
           <div className="text-center py-16 text-gray-400 text-sm">

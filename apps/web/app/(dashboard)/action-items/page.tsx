@@ -4,6 +4,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import { formatCurrency } from "@/utils/format";
+import { Skeleton, ListSkeleton } from "@/components/shared/Skeleton";
 import {
   Loader2,
   ClipboardCheck,
@@ -265,9 +266,12 @@ export default function ActionItemsPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-24 text-gray-400">
-          <Loader2 size={26} className="animate-spin mr-2" />
-          กำลังโหลดรายการตรวจสอบ...
+        <div className="space-y-5">
+          <div className="surface-glass rounded-2xl px-5 py-4 space-y-3">
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-2.5 w-full rounded-full" />
+          </div>
+          <ListSkeleton count={4} />
         </div>
       ) : recs.length === 0 ? (
         <EmptyState onRecompute={recompute} recomputing={recomputing} />

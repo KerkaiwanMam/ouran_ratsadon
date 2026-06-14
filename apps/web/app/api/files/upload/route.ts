@@ -7,13 +7,14 @@ import { prisma } from "@/lib/db";
 import {
   hashFileBytes,
   finalizeFileUpload,
-  generateMockTransactions,
+  type RawTx,
 } from "@/lib/file-processor";
 import {
   validateExtension,
   warnOnSuspiciousMime,
   containsMacros,
 } from "@/lib/file-sanitizer";
+import { parseBusinessFile, ParserError } from "@/lib/parser-client";
 
 // ─── Duplicate-file detection ───────────────────────────────────────────────
 // See docs/feature-specs.md → "Duplicate file & re-upload handling" for the
@@ -192,18 +193,33 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // For Phase 0, parse is simulated — generate mock transactions from the file
-  // In production this would call the Python parser microservice
+  // Send the uploaded file to the parser microservice for real parsing.
+  let transactions: RawTx[];
   try {
-    const mockTransactions = generateMockTransactions(file.name, auth.userId, fileRecord.id);
-    const result = await finalizeFileUpload(fileRecord, mockTransactions, auth.userId);
+    transactions = await parseBusinessFile(buffer, fileRecord.filename, fileRecord.sourceFormat, fileRecord.fileType);
+  } catch (err) {
+    const code = err instanceof ParserError ? err.code : "PARSE_ERROR";
+    const message = err instanceof ParserError ? err.userMessage : "ไม่สามารถประมวลผลไฟล์ได้";
+    await prisma.file.update({
+      where: { id: fileRecord.id },
+      data: { status: "ERROR", errorMessage: message },
+    });
+    console.error("[upload parse]", err);
+    return NextResponse.json(
+      { error: code, message },
+      { status: code === "PARSER_UNAVAILABLE" ? 503 : 422 }
+    );
+  }
+
+  try {
+    const result = await finalizeFileUpload(fileRecord, transactions, auth.userId);
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
     await prisma.file.update({
       where: { id: fileRecord.id },
       data: { status: "ERROR", errorMessage: "ไม่สามารถประมวลผลไฟล์ได้" },
     });
-    console.error("[upload parse]", err);
+    console.error("[upload finalize]", err);
     return NextResponse.json(
       { error: "PARSE_ERROR", message: "ไม่สามารถประมวลผลไฟล์ได้" },
       { status: 422 }
