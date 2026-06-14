@@ -119,7 +119,7 @@ Read the relevant doc before working in that area — keeps context lean while s
 - `docs/project-brief.md` — business context, market analysis, pivot rationale, revenue model & unit economics
 - `docs/business-logic-v2.md` — strategic feature breakdown, conversion funnel, v1→v2 comparison, validation checklist (Phase 0 scope here is synced with this file's Priority matrix)
 - `docs/analyzer-spec.md` — Civic data pipeline, cache-only storage strategy detail, red flag rules (1-4 incl. fallbacks), leak detection rules, forecast formulas (WMA + seasonal + cash runway + what-if)
-- `docs/database-schema.md` — full Prisma/SQL schema (all tables, enums, relations, indexes, migration phasing), JSON data shapes (BudgetData, SMEFinancialData)
+- `docs/database-schema.md` — full Prisma/SQL schema reference (all tables, enums, relations, indexes, migration phasing); `prisma/schema.prisma` is the source of truth, this doc explains groupings and decisions. JSON data shapes (BudgetData, SMEFinancialData) are in `docs/api-spec.md`
 - `docs/api-spec.md` — every endpoint with request/response shapes (Civic, Auth, Business, Subscription, Admin, Parser microservice)
 - `docs/routes-and-pages.md` — every page/route across all layers
 - `docs/feature-specs.md` — detailed UI/behavior spec per feature (explorer, search, project detail, upload, dashboard, leak detection, forecasting, alerts)
