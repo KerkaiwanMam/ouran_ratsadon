@@ -565,11 +565,10 @@ model BudgetLineItem {
 
   createdAt DateTime @default(now())
 
-  @@index([fiscalYear, ministry])
-  @@index([budgetaryUnit, fiscalYear])
-  @@index([refDoc, refPageNo])
-  @@index([project])
-  @@index([output])
+  /// Only `fiscalYear` is ever queried (deleteMany on replace/delete, findMany
+  /// for ETL aggregation on upload) — the civic read path is cache-only and
+  /// never queries this table by ministry/department/project/refDoc.
+  @@index([fiscalYear])
 }
 
 // ─── Phase 2: Team Workspace ─────────────────────────────────────────────────

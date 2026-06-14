@@ -7,7 +7,7 @@ ORM: Prisma
 
 Two-layer architecture means two data domains:
 
-1. **Civic Layer data**: Pre-processed government budget data — **dual-stored** (decided, see `analyzer-spec.md` § Data storage strategy): `data/budget-XXXX.json` is the source of truth, bulk-loaded into Postgres (`BudgetMinistry`/`BudgetDepartment`/`BudgetProject` — see below) AND used to rebuild an in-memory tree cache. Cache serves bounded tree reads (`/explore`, drill-down, compare); Postgres serves filtered/sorted/paginated reads (`/api/civic/search`, `/api/civic/export/*`).
+1. **Civic Layer data**: Pre-processed government budget data — **cache-only on the read path** (decided, see `analyzer-spec.md` § Data storage strategy): `data/budget-XXXX.json` is the source of truth and is lazily loaded into an in-memory tree cache (`lib/civic-cache.ts`) per fiscal year. **All** civic reads — `/explore`, `/search`, `/api/civic/export/*`, drill-down, compare — serve from this cache. Postgres (`BudgetLineItem`) is a write-side ETL staging table, never read by serving routes.
 2. **Business Layer data**: User accounts, uploaded files, parsed financial data, subscriptions, alerts. Stored in SQL.
 
 This document focuses on the SQL schema. For Civic Layer JSON structure, see `database-schema.md` § Data schemas below and `analyzer-spec.md`.
@@ -16,19 +16,17 @@ This document focuses on the SQL schema. For Civic Layer JSON structure, see `da
 
 ## Civic Layer storage
 
-> ⚠️ Updated 2026-06-08 to match the decided dual-storage strategy in `CLAUDE.md` / `analyzer-spec.md` — earlier drafts of this doc described an in-memory-only approach. Postgres is now part of the picture; do not revert to in-memory-only for search/export paths.
+> ⚠️ Updated 2026-06-14 — earlier drafts of this doc described a "dual-store" target with `BudgetMinistry`/`BudgetDepartment`/`BudgetProject` Postgres tables serving `/search` and `/export`. Those tables were never built. The actual, implemented architecture is cache-only: `BudgetLineItem` is a flat ETL-staging table, and every civic read (including search/export/filter/pagination) is served from the in-memory cache built from `data/budget-XXXX.json`. Do not add Postgres reads to civic serving routes.
 
-### Source of truth + bulk load
-- Location: `data/budget-{year}.json`, committed to repo
-- Bulk-inserted into Postgres tables `BudgetMinistry` / `BudgetDepartment` / `BudgetProject` on admin upload (see Core SQL tables below for shape — mirrors the Civic JSON tree with `fiscalYear`, `parentId`, `amount`, `previousAmount`, `changePct`, `flags`, `flagSeverity`, `province`, `budgetType`)
-- Indexes: `(fiscalYear, ministryId)`, `(amount)`, `(flagSeverity)`, trigram/GIN on `name` for Thai text search
+### Source of truth
+- Location: `data/budget-{year}.json`, committed to repo — written by the ETL step on each admin upload
 
-### In-memory tree cache (read-only mirror, NOT the source)
-- Rebuilt from Postgres (not directly from JSON) at server start and after each admin upload, via `lib/civic-cache.ts`
-- Used ONLY for bounded tree-shaped reads: `/explore` treemap/sunburst, drill-down breadcrumb, year-over-year compare, red-flag aggregation
-- Small (≤ a few MB/year, ~4 years = single-digit MB total) — in-memory is appropriate here, but NOT for filtered/paginated search (that's what Postgres + indexes are for)
+### In-memory tree cache (the only civic read path)
+- Lazily loaded per fiscal year directly from `data/budget-{year}.json` (`JSON.parse`) on first request, via `lib/civic-cache.ts` — no Postgres round trip
+- Serves **everything**: `/explore` treemap/sunburst, drill-down breadcrumb, year-over-year compare, red-flag aggregation, AND `/api/civic/search` / `/api/civic/export/*` (filter/sort/pagination run in-memory over the cached array)
+- Small (≤ a few MB/year, ~4 years = single-digit MB total) — in-memory is appropriate at this scale
 
-### Optional: CivicDataVersion (track admin uploads)
+### CivicDataVersion (tracks admin uploads)
 | Column        | Type     | Notes                                |
 |---------------|----------|--------------------------------------|
 | id            | String   | CUID, primary key                    |
@@ -45,30 +43,9 @@ This document focuses on the SQL schema. For Civic Layer JSON structure, see `da
 
 ---
 
-## Civic Layer SQL tables (dual-store target — Postgres)
+## Civic Layer SQL table — BudgetLineItem (write-side ETL staging, Postgres)
 
-### BudgetMinistry / BudgetDepartment / BudgetProject
-One row per tree node, mirroring the Civic JSON. Minimum fields:
-
-| Column         | Type      | Notes                                              |
-|----------------|-----------|----------------------------------------------------|
-| id             | String    | matches JSON `id` (e.g. "moe", "moe-001", "B68-...")|
-| parentId       | String?   | null for ministries                                 |
-| fiscalYear     | String    | e.g. "2568"                                        |
-| name           | String    | trigram/GIN indexed for Thai search                |
-| amount         | Decimal   |                                                     |
-| previousAmount | Decimal?  | null for new projects                              |
-| changePct      | Float?    |                                                     |
-| budgetType     | String?   | operating/investment/etc (BudgetProject only)      |
-| province       | String?   | (BudgetProject only)                               |
-| flags          | Json      | array of flag codes, e.g. `["unusual_increase"]`   |
-| flagSeverity   | String?   | critical/warning/null                              |
-| isNewProject   | Boolean   | true when Rule 1 fallback applies                  |
-
-**Indexes:** `(fiscalYear, ministryId)`, `(amount)`, `(flagSeverity)`, GIN/trigram on `name`
-
-### BudgetLineItem (raw/staging — source of the dual-store tree)
-Flat, 1-row-per-line-item mirror of the parsed PDF/Excel budget documents (per the project's Data Dict). This is the **raw layer**: an ETL/aggregation step rolls these rows up into `BudgetMinistry`/`BudgetDepartment`/`BudgetProject` above (which is what the Civic Layer actually serves). Roll-up mapping: `ministry` → BudgetMinistry node, `budgetaryUnit` → BudgetDepartment node, `output`/`project` (mutually exclusive — XOR) → BudgetProject node, `categoryLv1-6` → per-project expenditure-category breakdown.
+Flat, 1-row-per-line-item mirror of the parsed PDF/Excel budget documents (per the project's Data Dict). On admin upload, raw rows are bulk-inserted here; the ETL step then reads them back (`findMany({ where: { fiscalYear } })`) and aggregates them into the `CivicBudgetYear` JSON tree written to `data/budget-XXXX.json`. Roll-up mapping: `ministry` → ministry node, `budgetaryUnit` → department node, `output`/`project` (mutually exclusive — XOR) → project node, `categoryLv1-6` → per-project expenditure-category breakdown. Rows are removed via `deleteMany({ where: { fiscalYear } })` when a version is replaced/deleted. **Not queried by any serving route** — durable raw-data audit trail + ETL source only.
 
 | Column          | Type     | Notes                                                                 |
 |-----------------|----------|-----------------------------------------------------------------------|
@@ -86,26 +63,11 @@ Flat, 1-row-per-line-item mirror of the parsed PDF/Excel budget documents (per t
 | categoryLv1–Lv6 | String?  | หมวดงบรายจ่าย ลำดับชั้น 1–6 (รูปแบบ x.y.z ตามเอกสาร PDF)                |
 | itemDescription | String?  | ชื่อรายการ — บาง row ไม่มี                                             |
 | fiscalYear      | Int      | ปีงบประมาณ (ค.ศ.)                                                      |
-| amount          | Float    | จำนวนเงินงบประมาณ — Data Dict ระบุ `str` แต่เก็บเป็นตัวเลขเพื่อคำนวณ/รวมยอด |
+| amount          | Decimal  | จำนวนเงินงบประมาณ — `@db.Decimal(15,2)`, Thai national budget rows can reach tens of billions |
 | obliged         | Boolean  | งบผูกพัน — TRUE เมื่อ line item เดียวกันมีหลาย row คนละ FISCAL_YEAR       |
 | createdAt       | DateTime |                                                                       |
 
-**Indexes:** `(fiscalYear, ministry)`, `(budgetaryUnit, fiscalYear)`, `(refDoc, refPageNo)`, `project`, `output`
-
-### Optional: CivicDataVersion (track admin uploads)
-| Column        | Type     | Notes                                |
-|---------------|----------|--------------------------------------|
-| id            | String   | CUID, primary key                    |
-| fiscalYear    | String   | e.g. "2568"                          |
-| version       | Int      | Increments per upload                |
-| uploadedBy    | String   | FK → User.id (admin)                 |
-| filename      | String   | Source file name                     |
-| ministryCount | Int      |                                      |
-| projectCount  | Int      |                                      |
-| redFlagCount  | Int      |                                      |
-| isActive      | Boolean  | Only one active per year             |
-| uploadedAt    | DateTime |                                      |
-| notes         | String?  | Admin notes about this version       |
+**Indexes:** `(fiscalYear)` — the only column ever filtered on (`deleteMany`/`findMany` by `fiscalYear` during upload/delete)
 
 ---
 
@@ -605,7 +567,7 @@ Minimal tables to ship — matches the trimmed Phase 0 scope in `CLAUDE.md` (ema
 - `Subscription` (FREE + PRO with `isManuallyGranted` flag; no Stripe fields, no TEAM — payment integration is Phase 1)
 - `File` (without `workspaceId`, `errorMessage`)
 - `Transaction` with `leakFlag`/`leakSeverity`/`leakReason` populated by the **Outlier rule only** (Spike/Duplicate/Creep are Phase 1)
-- `BudgetMinistry`/`BudgetDepartment`/`BudgetProject` (Postgres bulk-load + cache, dual-store — see above) with Rules 1 & 2 red flags only
+- `BudgetLineItem` (Postgres ETL staging) + in-memory cache from `data/budget-XXXX.json` (cache-only read path — see above) with Rules 1 & 2 red flags only
 
 ### Phase 1
 Add:
@@ -625,7 +587,7 @@ Add:
 
 ## Performance notes
 
-- **Civic Layer**: Dual-stored (see above) — tree reads from in-memory cache, search/export/filter from Postgres with indexes. Do not run filtered/paginated queries against the in-memory tree; do not use Postgres for hot-path tree reads.
+- **Civic Layer**: Cache-only (see above) — all reads (tree, search, export, filter, pagination) come from the in-memory cache built from `data/budget-XXXX.json`. Postgres `BudgetLineItem` is write-side ETL staging only; never query it from a serving route.
 - **Business Layer**: Index on `(userId, date)` for Transaction is critical — most queries filter by user + date range.
 - **Forecast**: Computed on demand, not cached. If slow, cache result for 1 hour per `(fileId, params)`.
 - **Leak detection**: Computed once when file is processed, results stored on `Transaction.leakFlag`. Recompute if user adds more transactions.

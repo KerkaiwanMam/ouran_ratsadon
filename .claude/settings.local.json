@@ -136,7 +136,10 @@
       "Bash(curl -s -o /dev/null -w \"status=%{http_code} redirect=%{redirect_url}\\\\n\" http://localhost:3000/action-items)",
       "Bash(curl -s -o /dev/null -w \"status=%{http_code} redirect=%{redirect_url}\\\\n\" http://localhost:3000/analytics)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/analytics)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/)",
+      "Read(//tmp/**)",
+      "Bash(cd \"C:\\\\Users\\\\Mam23\\\\OneDrive\\\\เอกสาร\\\\GitHub\\\\ouran_ratsadon\" && rm -rf prisma/migrations/20260608164715_init_postgres && mkdir -p prisma/migrations/20260614120000_baseline && cp /tmp/full_schema.sql prisma/migrations/20260614120000_baseline/migration.sql && ls prisma/migrations/ && head -3 prisma/migrations/20260614120000_baseline/migration.sql && wc -l prisma/migrations/20260614120000_baseline/migration.sql)",
+      "Bash(jobs)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Mam23\\OneDrive\\เอกสาร\\GitHub\\ouran_ratsadon\\apps\\web",

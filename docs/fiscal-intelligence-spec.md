@@ -42,7 +42,7 @@ model FiscalYearSummary {
 }
 ```
 
-> เก็บแยกจาก `BudgetMinistry/Department/Project` เพราะเป็นข้อมูลคนละ "หน่วย" (ภาพรวมประเทศ vs การจัดสรรรายกระทรวง) — รวมกันใน UI ผ่าน API join ไม่ใช่ schema เดียวกัน
+> เก็บแยกจาก civic budget tree (`data/budget-XXXX.json` → ministries/departments/projects ใน in-memory cache) เพราะเป็นข้อมูลคนละ "หน่วย" (ภาพรวมประเทศ vs การจัดสรรรายกระทรวง) — รวมกันใน UI ผ่าน API join ไม่ใช่ schema เดียวกัน
 
 ### แหล่งข้อมูล (ต้องจัดหาก่อนเริ่ม build)
 - รายได้รัฐ + ดุลงบประมาณ: รายงานฐานะการคลัง สำนักงานเศรษฐกิจการคลัง (สศค.) / กรมบัญชีกลาง
