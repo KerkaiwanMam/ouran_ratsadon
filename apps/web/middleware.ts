@@ -8,7 +8,7 @@ import { verifyTokenFromRequest } from "@/lib/auth";
 // saved-search comparison page (no login required). The Business Layer's
 // "compare 2 SME files" [Pro] page lives at /files/compare and is already
 // covered by the "/files" prefix below.
-const PROTECTED_PREFIXES = ["/dashboard", "/analytics", "/transactions", "/vendors", "/assistant", "/upload", "/files", "/report", "/alerts", "/settings", "/upgrade"];
+const PROTECTED_PREFIXES = ["/dashboard", "/analytics", "/action-items", "/transactions", "/vendors", "/assistant", "/upload", "/files", "/report", "/alerts", "/settings", "/upgrade"];
 const ADMIN_PREFIXES = ["/admin"];
 
 // ─── Edge Rate Limiter (Upstash Redis — distributed) ─────────────────────────
@@ -151,6 +151,7 @@ export const config = {
     "/api/:path*",
     "/dashboard/:path*",
     "/analytics/:path*",
+    "/action-items/:path*",
     "/transactions/:path*",
     "/vendors/:path*",
     "/assistant/:path*",

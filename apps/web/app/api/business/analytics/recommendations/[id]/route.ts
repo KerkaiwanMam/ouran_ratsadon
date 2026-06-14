@@ -27,9 +27,9 @@ export async function PATCH(
     // ignore — validated below
   }
 
-  if (status !== "APPLIED" && status !== "DISMISSED") {
+  if (status !== "APPLIED" && status !== "DISMISSED" && status !== "PENDING") {
     return NextResponse.json(
-      { error: "INVALID_STATUS", message: "สถานะต้องเป็น APPLIED หรือ DISMISSED" },
+      { error: "INVALID_STATUS", message: "สถานะต้องเป็น APPLIED, DISMISSED หรือ PENDING" },
       { status: 400 }
     );
   }

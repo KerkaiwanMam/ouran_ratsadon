@@ -24,9 +24,7 @@ import {
   TrendingUp,
   TrendingDown,
   AlertTriangle,
-  Lightbulb,
-  CheckCircle2,
-  XCircle,
+  ClipboardCheck,
   Sparkles,
   ArrowUpRight,
   ArrowDownRight,
@@ -95,11 +93,11 @@ function Panel({
   return (
     <div className={`relative overflow-hidden surface-glass rounded-2xl ${className}`}>
       <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent" aria-hidden="true" />
-      <div className="px-5 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800">
-        <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">{title}</h3>
-        {caption && <p className="text-xs text-gray-400 mt-0.5">{caption}</p>}
+      <div className="px-6 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800/80">
+        <h3 className="text-[15px] font-bold text-gray-900 dark:text-gray-100 tracking-tight">{title}</h3>
+        {caption && <p className="text-xs text-gray-400 mt-1">{caption}</p>}
       </div>
-      <div className="p-5">{children}</div>
+      <div className="p-6">{children}</div>
     </div>
   );
 }
@@ -134,6 +132,32 @@ function DeltaBadge({
   );
 }
 
+/** KPI card — the ฿ figure is the focal point; the comparison sits bottom-right. */
+function KpiCard({
+  label,
+  value,
+  valueClass = "text-gray-900 dark:text-gray-100",
+  barClass = "bg-gradient-accent",
+  foot,
+}: {
+  label: string;
+  value: React.ReactNode;
+  valueClass?: string;
+  barClass?: string;
+  foot?: React.ReactNode;
+}) {
+  return (
+    <div className="relative overflow-hidden surface-glass rounded-2xl px-5 py-5 flex flex-col min-h-[132px]">
+      <span className={`absolute inset-x-0 top-0 h-0.5 ${barClass}`} aria-hidden="true" />
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2.5 truncate">{label}</p>
+      <p className={`num-focus text-3xl sm:text-[2.15rem] font-black leading-none ${valueClass}`}>
+        {value}
+      </p>
+      <div className="mt-auto pt-3 flex justify-end items-end min-h-[18px] text-right">{foot}</div>
+    </div>
+  );
+}
+
 const THAI_MONTHS_SHORT = [
   "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
   "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
@@ -163,14 +187,6 @@ const insightTypeIcon: Record<string, React.ElementType> = {
   new_vendor_surge: Sparkles,
   seasonal_drop: TrendingDown,
 };
-
-const priorityStyle: Record<string, string> = {
-  high: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
-  medium: "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400",
-  low: "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400",
-};
-
-const priorityLabel: Record<string, string> = { high: "สำคัญมาก", medium: "ควรดู", low: "ทั่วไป" };
 
 const PIE_COLORS = ["#7F77DD", "#534AB7", "#1D9E75", "#EF9F27", "#E24B4A", "#9CA3AF"];
 
@@ -271,15 +287,6 @@ export default function AnalyticsPage() {
   }
   if (insights[0]) narrativeSentences.push(insights[0].summary);
 
-  async function handleRecAction(id: string, status: "APPLIED" | "DISMISSED") {
-    await fetch(`/api/business/analytics/recommendations/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    recommendations.mutate();
-  }
-
   async function handleRunForecast() {
     await fetch("/api/business/analytics/forecast", { method: "POST" });
     forecastQ.mutate();
@@ -363,85 +370,65 @@ export default function AnalyticsPage() {
 
           {/* ── Overview KPI row ───────────────────────────────────────────── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="relative overflow-hidden surface-glass rounded-2xl px-4 py-4">
-              <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent" aria-hidden="true" />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                สุทธิเดือนล่าสุด ({latest ? monthLabel(latest.month) : "—"})
-              </p>
-              <p
-                className={`text-2xl font-black leading-none ${
-                  (latest?.net ?? 0) >= 0
-                    ? "text-gradient-accent w-fit"
-                    : "text-red-600 dark:text-red-400"
-                }`}
-              >
-                {formatCurrency(latest?.net ?? 0)}
-              </p>
-              <div className="mt-1.5">
-                <DeltaBadge current={latest?.net ?? 0} previous={previous?.net ?? null} />
-              </div>
-            </div>
-
-            <div className="relative overflow-hidden surface-glass rounded-2xl px-4 py-4">
-              <span className="absolute inset-x-0 top-0 h-0.5 bg-emerald-500/60" aria-hidden="true" />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">รายรับ</p>
-              <p className="text-2xl font-black leading-none text-emerald-600 dark:text-emerald-400">
-                {formatCurrency(latest?.totalIncome ?? 0)}
-              </p>
-              <div className="mt-1.5">
-                <DeltaBadge
-                  current={latest?.totalIncome ?? 0}
-                  previous={previous?.totalIncome ?? null}
-                />
-              </div>
-            </div>
-
-            <div className="relative overflow-hidden surface-glass rounded-2xl px-4 py-4">
-              <span className="absolute inset-x-0 top-0 h-0.5 bg-rose-500/60" aria-hidden="true" />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">รายจ่าย</p>
-              <p className="text-2xl font-black leading-none text-gray-900 dark:text-gray-100">
-                {formatCurrency(latest?.totalExpense ?? 0)}
-              </p>
-              <div className="mt-1.5">
+            <KpiCard
+              label={`สุทธิเดือนล่าสุด (${latest ? monthLabel(latest.month) : "—"})`}
+              value={formatCurrency(latest?.net ?? 0)}
+              valueClass={
+                (latest?.net ?? 0) >= 0
+                  ? "text-gradient-accent w-fit"
+                  : "text-red-600 dark:text-red-400"
+              }
+              foot={<DeltaBadge current={latest?.net ?? 0} previous={previous?.net ?? null} />}
+            />
+            <KpiCard
+              label="รายรับ"
+              barClass="bg-emerald-500/70"
+              value={formatCurrency(latest?.totalIncome ?? 0)}
+              valueClass="text-emerald-600 dark:text-emerald-400"
+              foot={
+                <DeltaBadge current={latest?.totalIncome ?? 0} previous={previous?.totalIncome ?? null} />
+              }
+            />
+            <KpiCard
+              label="รายจ่าย"
+              barClass="bg-rose-500/70"
+              value={formatCurrency(latest?.totalExpense ?? 0)}
+              valueClass="text-gray-900 dark:text-gray-100"
+              foot={
                 <DeltaBadge
                   current={latest?.totalExpense ?? 0}
                   previous={previous?.totalExpense ?? null}
                   invert
                 />
-              </div>
-            </div>
-
-            <div className="relative overflow-hidden surface-glass rounded-2xl px-4 py-4">
-              <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent opacity-40" aria-hidden="true" />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">พยากรณ์เดือนถัดไป</p>
-              {snapshot ? (
-                <>
-                  <p
-                    className={`text-2xl font-black leading-none ${
-                      snapshot.predictedNet >= 0
-                        ? "text-gray-900 dark:text-gray-100"
-                        : "text-red-600 dark:text-red-400"
-                    }`}
-                  >
-                    {formatCurrency(snapshot.predictedNet)}
-                  </p>
-                  <p className="text-[11px] text-gray-400 mt-1.5">
+              }
+            />
+            <KpiCard
+              label="พยากรณ์เดือนถัดไป"
+              barClass="bg-gradient-accent opacity-50"
+              value={snapshot ? formatCurrency(snapshot.predictedNet) : "—"}
+              valueClass={
+                !snapshot
+                  ? "text-gray-300 dark:text-gray-600"
+                  : snapshot.predictedNet >= 0
+                  ? "text-gray-900 dark:text-gray-100"
+                  : "text-red-600 dark:text-red-400"
+              }
+              foot={
+                snapshot ? (
+                  <span className="text-[11px] text-gray-400">
                     เงินสดอยู่ได้อีก{" "}
                     {snapshot.cashRunwayMonths !== null ? `~${snapshot.cashRunwayMonths} เดือน` : "—"}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-2xl font-black leading-none text-gray-300 dark:text-gray-600">—</p>
+                  </span>
+                ) : (
                   <button
                     onClick={handleRunForecast}
-                    className="text-[11px] text-accent hover:underline mt-1.5 cursor-pointer"
+                    className="text-[11px] text-accent hover:underline cursor-pointer"
                   >
                     คำนวณการพยากรณ์ →
                   </button>
-                </>
-              )}
-            </div>
+                )
+              }
+            />
           </div>
 
           {/* ── Main trend chart + category breakdown ──────────────────────── */}
@@ -451,38 +438,59 @@ export default function AnalyticsPage() {
               caption="แท่ง = รายรับ/รายจ่ายต่อเดือน · เส้น = กระแสเงินสดสุทธิ"
               className="lg:col-span-2"
             >
-              <ResponsiveContainer width="100%" height={260}>
-                <ComposedChart data={chartData} barGap={2}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis
-                    tickFormatter={compactBaht}
-                    tick={{ fill: "#94a3b8", fontSize: 11 }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={48}
-                  />
-                  <Tooltip
-                    formatter={(value) => formatCurrency(Number(value))}
-                    contentStyle={{
-                      background: "var(--surface)",
-                      border: "1px solid var(--border-subtle)",
-                      borderRadius: 12,
-                      fontSize: 12,
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="รายรับ" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={26} />
-                  <Bar dataKey="รายจ่าย" fill="#fb7185" radius={[4, 4, 0, 0]} maxBarSize={26} />
-                  <Line
-                    type="monotone"
-                    dataKey="สุทธิ"
-                    stroke="#22d3ee"
-                    strokeWidth={2.5}
-                    dot={{ r: 3, fill: "#22d3ee" }}
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
+              <div className="chart-line-glow">
+                <ResponsiveContainer width="100%" height={280}>
+                  <ComposedChart data={chartData} barGap={4}>
+                    <defs>
+                      <linearGradient id="barIncome" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#34d399" stopOpacity={0.95} />
+                        <stop offset="100%" stopColor="#10b981" stopOpacity={0.5} />
+                      </linearGradient>
+                      <linearGradient id="barExpense" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#fb7185" stopOpacity={0.95} />
+                        <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.5} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fill: "#94a3b8", fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                      dy={6}
+                    />
+                    <YAxis
+                      tickFormatter={compactBaht}
+                      tick={{ fill: "#94a3b8", fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={48}
+                    />
+                    <Tooltip
+                      cursor={{ fill: "rgba(148,163,184,0.08)" }}
+                      formatter={(value) => formatCurrency(Number(value))}
+                      contentStyle={{
+                        background: "var(--surface)",
+                        border: "1px solid var(--border-subtle)",
+                        borderRadius: 12,
+                        fontSize: 12,
+                        boxShadow: "0 12px 32px -12px rgba(0,0,0,0.5)",
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} iconType="circle" />
+                    <Bar dataKey="รายรับ" fill="url(#barIncome)" radius={[8, 8, 2, 2]} maxBarSize={28} />
+                    <Bar dataKey="รายจ่าย" fill="url(#barExpense)" radius={[8, 8, 2, 2]} maxBarSize={28} />
+                    <Line
+                      type="monotone"
+                      dataKey="สุทธิ"
+                      stroke="#22d3ee"
+                      strokeWidth={3}
+                      dot={{ r: 3, fill: "#22d3ee", strokeWidth: 0 }}
+                      activeDot={{ r: 5, strokeWidth: 0 }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
             </Panel>
 
             <Panel
@@ -493,42 +501,55 @@ export default function AnalyticsPage() {
                 <EmptyNote>ไม่มีรายจ่ายในเดือนล่าสุด</EmptyNote>
               ) : (
                 <>
-                  <ResponsiveContainer width="100%" height={160}>
-                    <PieChart>
-                      <Pie
-                        data={topCategories.map((c) => ({ name: c.category, value: c.totalExpense }))}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={42}
-                        outerRadius={68}
-                        paddingAngle={2}
-                        onClick={(entry) =>
-                          router.push(
-                            `/transactions?category=${encodeURIComponent(entry.name as string)}&month=${latest?.month ?? ""}`
-                          )
-                        }
-                      >
-                        {topCategories.map((c, index) => (
-                          <Cell
-                            key={c.category}
-                            fill={PIE_COLORS[index % PIE_COLORS.length]}
-                            className="cursor-pointer"
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value) => formatCurrency(Number(value))}
-                        contentStyle={{
-                          background: "var(--surface)",
-                          border: "1px solid var(--border-subtle)",
-                          borderRadius: 12,
-                          fontSize: 12,
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <div className="relative">
+                    <ResponsiveContainer width="100%" height={190}>
+                      <PieChart>
+                        <Pie
+                          data={topCategories.map((c) => ({ name: c.category, value: c.totalExpense }))}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={58}
+                          outerRadius={84}
+                          paddingAngle={3}
+                          cornerRadius={6}
+                          stroke="var(--surface)"
+                          strokeWidth={3}
+                          onClick={(entry) =>
+                            router.push(
+                              `/transactions?category=${encodeURIComponent(entry.name as string)}&month=${latest?.month ?? ""}`
+                            )
+                          }
+                        >
+                          {topCategories.map((c, index) => (
+                            <Cell
+                              key={c.category}
+                              fill={PIE_COLORS[index % PIE_COLORS.length]}
+                              className="cursor-pointer outline-none"
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value) => formatCurrency(Number(value))}
+                          contentStyle={{
+                            background: "var(--surface)",
+                            border: "1px solid var(--border-subtle)",
+                            borderRadius: 12,
+                            fontSize: 12,
+                            boxShadow: "0 12px 32px -12px rgba(0,0,0,0.5)",
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    {/* Center total — donut focal point */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span className="text-[10px] text-gray-400">รวมรายจ่าย</span>
+                      <span className="num-focus text-lg font-black text-gray-800 dark:text-gray-100">
+                        ฿{compactBaht(topCategories.reduce((s, c) => s + c.totalExpense, 0))}
+                      </span>
+                    </div>
+                  </div>
 
                   <ul className="space-y-3.5 mt-1">
                     {topCategories.map((c, index) => (
@@ -651,49 +672,58 @@ export default function AnalyticsPage() {
 
             <Panel
               title="ควรทำอะไรต่อ (Prescriptive)"
-              caption="คำแนะนำจาก rule engine — กดถูกเมื่อทำแล้ว"
+              caption="รายการที่ระบบสะกิดให้ตรวจสอบ — จัดการแบบเช็คลิสต์ในหน้าเฉพาะ"
             >
               {recs.length === 0 ? (
-                <EmptyNote>ยังไม่มีคำแนะนำในขณะนี้ — ระบบจะแนะนำเมื่อพบสิ่งที่น่าสนใจ</EmptyNote>
+                <div className="py-2">
+                  <EmptyNote>ยังไม่มีรายการที่ต้องตรวจสอบ — ระบบจะแจ้งเมื่อพบความผิดปกติ</EmptyNote>
+                  <Link
+                    href="/action-items"
+                    className="flex items-center justify-center gap-1.5 text-sm font-medium text-accent hover:underline"
+                  >
+                    เปิดหน้ารายการตรวจสอบ
+                    <ArrowUpRight size={14} aria-hidden="true" />
+                  </Link>
+                </div>
               ) : (
-                <ul className="space-y-3">
-                  {recs.map((rec) => (
-                    <li
-                      key={rec.id}
-                      className="flex items-start justify-between gap-3 border-b border-gray-50 dark:border-gray-700/50 pb-3 last:border-0 last:pb-0"
-                    >
-                      <div className="flex items-start gap-2.5">
-                        <Lightbulb size={16} className="text-accent mt-0.5 shrink-0" aria-hidden="true" />
-                        <div>
-                          <span
-                            className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded mb-1 ${
-                              priorityStyle[rec.priority] ?? priorityStyle.low
-                            }`}
-                          >
-                            {priorityLabel[rec.priority] ?? rec.priority}
-                          </span>
-                          <p className="text-sm text-gray-700 dark:text-gray-200">{rec.action}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          onClick={() => handleRecAction(rec.id, "APPLIED")}
-                          title="ดำเนินการแล้ว"
-                          className="p-1.5 rounded-md text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors cursor-pointer"
-                        >
-                          <CheckCircle2 size={16} aria-hidden="true" />
-                        </button>
-                        <button
-                          onClick={() => handleRecAction(rec.id, "DISMISSED")}
-                          title="ไม่สนใจ"
-                          className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
-                        >
-                          <XCircle size={16} aria-hidden="true" />
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center justify-center w-11 h-11 shrink-0 rounded-xl bg-gradient-accent text-white">
+                      <ClipboardCheck size={22} aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        มี{" "}
+                        <span className="font-bold text-gradient-accent">{recs.length} รายการ</span>{" "}
+                        ที่ควรตรวจสอบ
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        กดเข้าไปดูเหตุผล สถิติค่าใช้จ่าย และยืนยันเมื่อตรวจครบ
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Preview the two highest-priority items */}
+                  <ul className="space-y-2">
+                    {recs.slice(0, 2).map((rec) => (
+                      <li
+                        key={rec.id}
+                        className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300"
+                      >
+                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-accent shrink-0" aria-hidden="true" />
+                        <span className="line-clamp-1">{rec.action}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link
+                    href="/action-items"
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-white bg-gradient-accent rounded-lg px-4 py-2 hover:opacity-90 transition-opacity"
+                  >
+                    เปิดรายการตรวจสอบทั้งหมด
+                    <ArrowUpRight size={14} aria-hidden="true" />
+                  </Link>
+                </div>
               )}
             </Panel>
           </div>

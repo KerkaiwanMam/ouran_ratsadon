@@ -20,6 +20,7 @@ import {
   Bell,
   Sparkles,
   Map,
+  ClipboardCheck,
 } from "lucide-react";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 
@@ -33,6 +34,7 @@ const memberLinks = [
   { href: "/dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
   { href: "/transactions", label: "รายการธุรกรรม", icon: Receipt },
   { href: "/analytics", label: "วิเคราะห์เชิงลึก", icon: LineChart },
+  { href: "/action-items", label: "สิ่งที่ต้องตรวจสอบ", icon: ClipboardCheck },
   { href: "/vendors", label: "ผู้ให้บริการ", icon: Users, pro: true },
   { href: "/assistant", label: "ผู้ช่วย AI", icon: Sparkles, pro: true },
   { href: "/upload", label: "อัปโหลดไฟล์", icon: Upload },
@@ -91,7 +93,7 @@ export default function Sidebar({ role = "member" }: SidebarProps) {
       </div>
 
       {/* Nav links */}
-      <nav className="flex flex-col gap-0.5 flex-1" aria-label="เมนูหลัก">
+      <nav className="flex flex-col gap-1 flex-1" aria-label="เมนูหลัก">
         {links.map((link) => {
           const Icon = link.icon;
           const active = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
@@ -101,23 +103,23 @@ export default function Sidebar({ role = "member" }: SidebarProps) {
             <Link
               key={link.href}
               href={link.href}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${
+              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
                 isUpgrade
-                  ? "text-[#7F77DD] hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                  ? "mt-auto border border-[#7F77DD]/25 bg-gradient-to-r from-[#7F77DD]/12 to-[#534AB7]/12 text-[#7F77DD] hover:from-[#7F77DD]/20 hover:to-[#534AB7]/20 hover:border-[#7F77DD]/40"
                   : active
-                  ? "bg-purple-50 dark:bg-purple-900/25 text-[#7F77DD]"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200"
+                  ? "bg-purple-50 dark:bg-purple-900/25 text-[#7F77DD] shadow-[inset_0_0_0_1px_rgba(127,119,221,0.18)]"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-200"
               }`}
               aria-current={active ? "page" : undefined}
             >
               <Icon
-                size={16}
+                size={17}
                 aria-hidden="true"
-                className={active || isUpgrade ? "text-[#7F77DD]" : "text-gray-400 dark:text-gray-500"}
+                className={`shrink-0 ${active || isUpgrade ? "text-[#7F77DD]" : "text-gray-400 dark:text-gray-500"}`}
               />
-              <span>{link.label}</span>
+              <span className="truncate">{link.label}</span>
               {(isUpgrade || "pro" in link) && (
-                <span className="ml-auto text-[10px] font-bold bg-[#7F77DD] text-white px-1.5 py-0.5 rounded-full leading-none">
+                <span className="ml-auto text-[10px] font-bold bg-[#7F77DD] text-white px-1.5 py-0.5 rounded-full leading-none shrink-0">
                   PRO
                 </span>
               )}

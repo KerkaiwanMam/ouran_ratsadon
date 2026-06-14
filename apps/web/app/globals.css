@@ -167,6 +167,50 @@
   color: transparent;
 }
 
+/* =========================================================
+   PREMIUM DARK-BUSINESS POLISH — depth, glow, refined numerics
+   Scoped to the dashboard shell so the civic/light surfaces stay clean.
+   ========================================================= */
+
+/* Ambient backdrop: near-black with two faint accent glows (violet top-right,
+   cyan bottom-left) — gives the dark dashboard real depth behind the cards. */
+.business-ambient {
+  background: var(--background);
+}
+.dark .business-ambient {
+  background:
+    radial-gradient(1100px 560px at 85% -8%, rgba(139, 92, 246, 0.1), transparent 60%),
+    radial-gradient(900px 480px at -5% 105%, rgba(34, 211, 238, 0.07), transparent 55%),
+    #07070b;
+}
+
+/* Elevation + soft inner highlight on dark business glass cards, with a gentle
+   accent glow on hover so cards feel alive without shifting layout. */
+.dark [data-theme="business"] .surface-glass {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 24px 60px -32px rgba(0, 0, 0, 0.95);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.dark [data-theme="business"] .surface-glass:hover {
+  border-color: rgba(167, 139, 250, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(167, 139, 250, 0.1),
+    0 28px 70px -30px rgba(124, 58, 237, 0.42);
+}
+
+/* Soft neon glow on the net-cash-flow line in charts. */
+.chart-line-glow .recharts-line-curve {
+  filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.55));
+}
+
+/* Tabular, slightly tightened numerics for KPI focus numbers. */
+.num-focus {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
 html {
   scroll-behavior: smooth;
 }
