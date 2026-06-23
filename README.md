@@ -73,13 +73,13 @@
                   └──────────▲────────┘  └─────────┬───────────┘
                              │                      │
                   ┌──────────┴──────────┐  ┌────────▼────────────┐
-                  │ data/budget-XXXX.json│  │ apps/parser (FastAPI)│
+                  │ apps/web/data/*.json │  │ apps/parser (FastAPI)│
                   │ (source of truth,    │  │ pdfplumber/openpyxl  │
                   │  bulk-loaded once)   │  │ leak/forecast logic  │
                   └─────────────────────┘  └─────────────────────┘
 ```
 
-**กลยุทธ์ dual storage ของ Civic Layer**: `data/budget-XXXX.json` คือ source of truth → bulk-load เข้า Postgres (สำหรับ query ที่กรอง/เรียงลำดับ/แบ่งหน้า เช่น `/api/civic/search`) **และ** ใช้สร้าง in-memory tree cache (สำหรับ bounded reads เช่น `/explore` drill-down) พร้อมกัน — รายละเอียดเต็มอยู่ใน [`docs/analyzer-spec.md`](./docs/analyzer-spec.md)
+**กลยุทธ์ storage ของ Civic Layer (cache-only read path)**: `apps/web/data/budget-XXXX.json` คือ source of truth → โหลดเข้า in-memory tree cache (`lib/civic-cache.ts`) ครั้งแรกต่อปีงบประมาณ **ทุก** civic read (`/explore`, `/search`, export, project detail, drill-down, compare) อ่านจาก cache นี้ ไม่แตะ Postgres เลย ส่วน `BudgetLineItem` (Postgres) เป็นเพียง write-side staging ตอน admin upload (ETL aggregate → เขียน JSON tree กลับ) — รายละเอียดเต็มอยู่ใน [`docs/analyzer-spec.md`](./docs/analyzer-spec.md)
 
 ---
 
@@ -89,9 +89,9 @@
 ouran_ratsadon/
 ├── apps/
 │   ├── web/      # Next.js frontend (Civic + Business + Admin)
+│   │   └── data/ # ข้อมูลงบประมาณ+การคลังประมวลผลล่วงหน้า (budget-XXXX.json, fiscal-summary.json) — civic read path
 │   └── parser/   # Python FastAPI microservice (PDF/Excel parsing, analyzers)
 ├── prisma/       # Database schema + migrations
-├── data/         # ข้อมูลงบประมาณที่ประมวลผลล่วงหน้า (budget-XXXX.json)
 ├── sample-data/  # ไฟล์ SME ตัวอย่างสำหรับทดสอบ Business Layer
 └── docs/         # สเปกละเอียดทุกส่วน (ดู docs index ใน CLAUDE.md)
 ```
@@ -114,6 +114,20 @@ npm run dev
 ```
 
 เปิด [http://localhost:3000](http://localhost:3000) — Civic Layer ใช้งานได้ทันทีโดยไม่ต้อง login ส่วน Business Layer ต้องสมัครสมาชิกก่อน (ดูตัวอย่างไฟล์สำหรับทดสอบใน [`sample-data/`](./sample-data))
+
+### ⚠️ บริการเสริมที่มีค่าใช้จ่าย (Optional paid services)
+
+โปรเจกต์รันได้ฟรีทั้งหมดโดยปล่อยตัวแปรด้านล่างเป็นค่าว่าง (ฟีเจอร์ที่เกี่ยวข้องจะ degrade อย่างสุภาพ ไม่ crash) แต่ถ้าตั้งค่าเพื่อเปิดใช้ฟีเจอร์เต็มรูปแบบ จะมีค่าใช้จ่ายตามนี้:
+
+| Env var | บริการ | ค่าใช้จ่าย |
+|---|---|---|
+| `STRIPE_SECRET_KEY` | ชำระเงินสมาชิก Pro/Team | ฟรีถ้าใช้ `sk_test_...` (test mode) — โหมด live คิดค่าธรรมเนียมตาม transaction จริง |
+| `RESEND_API_KEY` | ส่งอีเมลแจ้งเตือน | ฟรี 3,000 อีเมล/เดือน เกินกว่านี้มีค่าใช้จ่าย |
+| `UPSTASH_REDIS_REST_URL` / `TOKEN` | Rate limiting แบบ distributed | ฟรี free tier — เกิน quota มีค่าใช้จ่าย |
+| `R2_ENDPOINT` / `R2_ACCESS_KEY_ID` / ... | Direct-to-storage file upload (Cloudflare R2) | ฟรี free tier (10GB storage + egress ฟรี) — เกิน quota มีค่าใช้จ่าย |
+| `DATABASE_URL` / `DIRECT_URL` (Neon) | ฐานข้อมูล Postgres | ฟรี free tier (0.5GB storage, auto-suspend) — เกิน quota มีค่าใช้จ่าย |
+
+> **ผู้ช่วย AI (`/assistant`)** ปัจจุบันตอบด้วย rule-based engine ภายใน (`lib/assistant/rules.ts`) — ไม่เรียก LLM ภายนอก ไม่มีค่าใช้จ่าย ไม่ต้องตั้งค่า API key ใดๆ การเชื่อมต่อ LLM ฟรี tier (เช่น Google Gemini) สำหรับคำถามแบบอิสระเป็นแผนในเฟสถัดไป
 
 ---
 

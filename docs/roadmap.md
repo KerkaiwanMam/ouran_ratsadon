@@ -81,7 +81,7 @@ Phase 2 work starts now per the list above.
 
 **Phase 2 complete (2026-06-09).** All Phase 2 items built:
 
-- **Macro Fiscal Intelligence**: `data/fiscal-summary.json` (2558–2568, 11 years), `FiscalYearSummary` Prisma model, `GET /api/civic/fiscal`, `/fiscal-overview` page (Recharts ComposedChart, stat strip, debt/GDP bar, data table), fiscal context bar on `/explore` (SWR-fetched amber banner)
+- **Macro Fiscal Intelligence**: `apps/web/data/fiscal-summary.json` (2558–2568, 11 years), `FiscalYearSummary` Prisma model, `GET /api/civic/fiscal`, `/fiscal-overview` page (Recharts ComposedChart, stat strip, debt/GDP bar, data table), fiscal context bar on `/explore` (SWR-fetched amber banner)
 - **Bank statement parsing**: `apps/parser/parsers/bank_statement_parser.py` (SCB, KBANK, BBL; BE/AD date, Thai dash, channel inference), `POST /parse/bank-statement` endpoint, upload UI tabs wired with two-stage parser→API flow
 - **Accounting export parsing**: `apps/parser/parsers/accounting_export_parser.py` (PEAK, FlowAccount; header autodetect, column aliases, BE/AD date), `POST /parse/accounting-export` endpoint, upload UI tabs (PEAK, FlowAccount) added
 - **Team workspace**: `Workspace`, `WorkspaceMember`, `WorkspaceFile` Prisma models, `GET/POST /api/workspace`, `GET/POST /api/workspace/[id]/members`, workspace invite email (Resend), `/workspace` dashboard page, `POST /api/workspace/join` + `/workspace/join` accept page
@@ -114,3 +114,13 @@ Full security audit completed; 6 fixes applied and pushed to Neon via `prisma db
 Additionally: full Next.js API reference (`docs/nextjs-api.html`) — standalone HTML with sidebar nav, accordion cards, 47 routes across Civic, Auth, Business, Admin, and Internal layers. FastAPI Swagger UI tag grouping fixed (`openapi_tags` + `tags` on all endpoints).
 
 **Architecture documentation updated.** 3-tab interactive diagram covers: (1) API Gateway & Security Layer with rate-limit-first middleware stack; (2) File Storage & Presigned URL target flow with all validation steps; (3) Future data pipeline with 4-tier analytics and rawValues ML preservation callout.
+
+**Phase 3 — Conversational AI assistant (2026-06-14).** The user-facing top of the 3-layer "AI-on-Top" model (`budget-intelligence-frontend` skill) is built, Pro-gated:
+
+- **Governed-context assembler** (`apps/web/lib/assistant/context.ts`) — pulls only aggregates (`getDescriptiveSummary` + `getDiagnosticInsights` + `getLatestForecastSnapshot` + `getRecommendations`) into a compact bundle. **No raw `Transaction` rows ever reach the reply engine** (PDPA + anti-hallucination boundary).
+- **`POST /api/business/chat`** (`apps/web/app/api/business/chat/route.ts`) — Node runtime, Pro gate identical to `/api/business/vendors`. Replies are produced by a **zero-cost rule-based engine** (`apps/web/lib/assistant/rules.ts`): keyword-matched Thai intents (top categories, anomalies, forecast, cash runway, recommendations, month comparison, summary) rendered as templates from the governed context, with citations turned into drill-down hrefs (`/transactions?category=&month=` or `/analytics`). No external API, no token cost, no API key. Forecast disclosure (WMA+Seasonal, not AI/ML) is baked into the template text.
+- **`/assistant` page** (`apps/web/app/(dashboard)/assistant/page.tsx`) — Thai chat UI, client-held history, citation chips, suggested starter questions, Pro-upsell gate. Entry points: Sidebar "ผู้ช่วย AI" (PRO) + dashboard narrative card "ถาม AI เพิ่มเติม".
+- **Rate limit**: dedicated `chat` tier (15/min per IP) retained in `middleware.ts` above the generic `/api/` tier, preserving rate-limiting-first. `/assistant` added to `PROTECTED_PREFIXES` + matcher.
+- **2026-06-14 (later, same day) — switched off Anthropic API**: the initial build used `@anthropic-ai/sdk` (`ANTHROPIC_API_KEY`/`ANTHROPIC_MODEL`, pay-per-token, no free tier). Replaced with the rule-based engine above to keep the feature free; `@anthropic-ai/sdk` uninstalled, env placeholders removed, dead "unconfigured" (503) UI gate removed.
+
+Deferred: a free-tier LLM (e.g. Google Gemini free tier) for free-form Q&A beyond the fixed intents — would slot in as an optional upgrade on top of the rule-based fallback. Also deferred: streaming responses, conversation persistence (`ChatMessage` model — history is client-held for now).

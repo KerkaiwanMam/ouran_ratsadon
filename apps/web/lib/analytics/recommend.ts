@@ -190,11 +190,14 @@ export async function getRecommendations(
   }));
 }
 
-/** Mark a recommendation as applied or dismissed — the apply/dismiss feedback loop. */
+/**
+ * Set a recommendation's status — the review feedback loop.
+ * APPLIED = ตรวจสอบแล้ว, DISMISSED = พักไว้/ไม่เกี่ยวข้อง, PENDING = เปิดกลับมาตรวจใหม่.
+ */
 export async function setRecommendationStatus(
   userId: string,
   id: string,
-  status: "APPLIED" | "DISMISSED"
+  status: "APPLIED" | "DISMISSED" | "PENDING"
 ): Promise<boolean> {
   const rec = await prisma.recommendation.findFirst({ where: { id, userId } });
   if (!rec) return false;

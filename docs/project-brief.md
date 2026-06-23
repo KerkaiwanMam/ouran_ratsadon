@@ -282,7 +282,7 @@ The Civic Layer alone is a strong portfolio piece (open data + civic tech + Thai
 2. OR use machine-readable data from WeVis: search for `bit.ly/openbudget68` style URLs
 3. Parse using Python script in `apps/parser/`
 4. Validate JSON structure matches `BudgetData` schema in CLAUDE.md
-5. Place in `/data/budget-2568.json`
+5. Place in `/apps/web/data/budget-2568.json`
 6. Run red flag detection script → output cached results
 
 ### For Business Layer

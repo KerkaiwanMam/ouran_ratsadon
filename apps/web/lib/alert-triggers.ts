@@ -159,3 +159,43 @@ export async function triggerOverBudgetAlert(
     context: { category, actual, budget, overPct },
   });
 }
+
+/**
+ * Compares the current month's category spend against the user's Budget
+ * targets (month-specific overrides the standing/all-months budget, same
+ * precedence as /api/business/dashboard) and fires triggerOverBudgetAlert
+ * for every category that's over. Safe to call repeatedly — dedup happens
+ * inside triggerOverBudgetAlert.
+ */
+export async function checkOverBudgetAlerts(userId: string): Promise<void> {
+  const now = new Date();
+  const monthKey = now.toISOString().slice(0, 7);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  const [transactions, budgets] = await Promise.all([
+    prisma.transaction.findMany({
+      where: { userId, transactionType: "EXPENSE", date: { gte: monthStart, lt: monthEnd } },
+      select: { category: true, amount: true },
+    }),
+    prisma.budget.findMany({ where: { userId, OR: [{ month: monthKey }, { month: null }] } }),
+  ]);
+  if (transactions.length === 0 || budgets.length === 0) return;
+
+  const totals = new Map<string, number>();
+  for (const t of transactions) {
+    totals.set(t.category, (totals.get(t.category) ?? 0) + Math.abs(Number(t.amount)));
+  }
+
+  // Standing (month: null) budgets first, month-specific overrides win.
+  const budgetMap = new Map<string, number>();
+  for (const b of budgets.filter((b) => b.month === null)) budgetMap.set(b.category, Number(b.amount));
+  for (const b of budgets.filter((b) => b.month !== null)) budgetMap.set(b.category, Number(b.amount));
+
+  for (const [category, actual] of totals) {
+    const budget = budgetMap.get(category);
+    if (budget && actual > budget) {
+      await triggerOverBudgetAlert(userId, category, actual, budget);
+    }
+  }
+}

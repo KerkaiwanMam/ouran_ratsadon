@@ -8,7 +8,7 @@ import { verifyTokenFromRequest } from "@/lib/auth";
 // saved-search comparison page (no login required). The Business Layer's
 // "compare 2 SME files" [Pro] page lives at /files/compare and is already
 // covered by the "/files" prefix below.
-const PROTECTED_PREFIXES = ["/dashboard", "/analytics", "/upload", "/files", "/report", "/alerts", "/settings", "/upgrade"];
+const PROTECTED_PREFIXES = ["/dashboard", "/analytics", "/action-items", "/transactions", "/vendors", "/assistant", "/upload", "/files", "/report", "/alerts", "/settings", "/upgrade"];
 const ADMIN_PREFIXES = ["/admin"];
 
 // ─── Edge Rate Limiter (Upstash Redis — distributed) ─────────────────────────
@@ -45,9 +45,18 @@ function makeLimiter(tokens: number, prefix: string): Ratelimit | null {
 // storage + parse pipeline. GET /api/files (list) stays on the general tier.
 const UPLOAD_PATH_RE = /^\/api\/files\/(upload$|presign$|[^/]+\/(local-upload|confirm)$)/;
 
+// The AI assistant route fans out to an LLM call per request — far costlier
+// (latency + $) than a normal DB read, so it gets its own stricter tier ABOVE
+// the generic /api/ rule (LIMITERS.find returns the first match, so order =
+// priority). The Pro gate in the route already restricts *who* can call it;
+// this caps how fast they can. Kept above /api/ but below upload/auth so the
+// rate-limiter-first invariant (Step 1) is preserved.
+const CHAT_PATH_RE = /^\/api\/business\/chat$/;
+
 const LIMITERS: { matches: (pathname: string) => boolean; limit: number; limiter: Ratelimit | null }[] = [
   { matches: (p) => UPLOAD_PATH_RE.test(p),    limit: 5,  limiter: makeLimiter(5, "upload") },
   { matches: (p) => p.startsWith("/api/auth"), limit: 10, limiter: makeLimiter(10, "auth") },
+  { matches: (p) => CHAT_PATH_RE.test(p),      limit: 15, limiter: makeLimiter(15, "chat") },
   { matches: (p) => p.startsWith("/api/"),     limit: 60, limiter: makeLimiter(60, "api") },
 ];
 
@@ -141,6 +150,11 @@ export const config = {
     // (Without this entry the whole rate limiter is dead code.)
     "/api/:path*",
     "/dashboard/:path*",
+    "/analytics/:path*",
+    "/action-items/:path*",
+    "/transactions/:path*",
+    "/vendors/:path*",
+    "/assistant/:path*",
     "/upload/:path*",
     "/files/:path*",
     "/report/:path*",

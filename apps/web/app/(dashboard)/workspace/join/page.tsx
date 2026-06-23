@@ -1,12 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 type State = "loading" | "success" | "error";
 
 export default function WorkspaceJoinPage() {
+  // useSearchParams() requires a Suspense boundary for static prerendering
+  return (
+    <Suspense fallback={null}>
+      <WorkspaceJoinContent />
+    </Suspense>
+  );
+}
+
+function WorkspaceJoinContent() {
   const router = useRouter();
   const params = useSearchParams();
   const token = params.get("token");

@@ -248,6 +248,92 @@ export default async function ProjectDetailPage({ params, searchParams }: PagePr
             </dl>
           </div>
 
+          {/* Line item details (ITEM_DESCRIPTION / "ชื่อรายการ" from source PDF) */}
+          {project.items && project.items.length > 0 && (() => {
+            const itemsTotal = project.items.reduce((s, it) => s + it.amount, 0);
+            return (
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    รายละเอียดรายการ
+                    <span className="ml-2 font-normal text-gray-400 dark:text-gray-500">
+                      {project.items.length} รายการ
+                    </span>
+                  </h2>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        <th
+                          scope="col"
+                          className="w-14 px-4 py-2.5 text-center font-semibold bg-gray-50 dark:bg-gray-800 border-b border-r border-gray-200 dark:border-gray-700"
+                        >
+                          ลำดับ
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-4 py-2.5 text-left font-semibold bg-gray-50 dark:bg-gray-800 border-b border-r border-gray-200 dark:border-gray-700"
+                        >
+                          รายการ
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-4 py-2.5 text-right font-semibold bg-gray-50 dark:bg-gray-800 border-b border-r border-gray-200 dark:border-gray-700 whitespace-nowrap"
+                        >
+                          จำนวนเงิน (บาท)
+                        </th>
+                        <th
+                          scope="col"
+                          className="w-20 px-4 py-2.5 text-right font-semibold bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 whitespace-nowrap"
+                        >
+                          สัดส่วน
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                      {project.items.map((item, i) => (
+                        <tr
+                          key={i}
+                          className="even:bg-gray-50/60 dark:even:bg-gray-800/30 hover:bg-purple-50/60 dark:hover:bg-purple-900/10 transition-colors"
+                        >
+                          <td className="px-4 py-2.5 text-center font-mono tabular-nums text-gray-400 dark:text-gray-500 border-r border-gray-100 dark:border-gray-800">
+                            {i + 1}
+                          </td>
+                          <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300 border-r border-gray-100 dark:border-gray-800">
+                            {item.name}
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-mono tabular-nums font-medium text-gray-900 dark:text-gray-100 border-r border-gray-100 dark:border-gray-800 whitespace-nowrap">
+                            ฿{item.amount.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-mono tabular-nums text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                            {((item.amount / itemsTotal) * 100).toFixed(2)}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-gray-50 dark:bg-gray-800 font-semibold text-gray-900 dark:text-gray-100">
+                        <td
+                          colSpan={2}
+                          className="px-4 py-3 text-right border-t-2 border-r border-gray-200 dark:border-gray-700"
+                        >
+                          รวมทั้งหมด
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono tabular-nums border-t-2 border-r border-gray-200 dark:border-gray-700 whitespace-nowrap">
+                          ฿{itemsTotal.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono tabular-nums border-t-2 border-gray-200 dark:border-gray-700 whitespace-nowrap">
+                          100.00%
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* 5-year history chart */}
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">

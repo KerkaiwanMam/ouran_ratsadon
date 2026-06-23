@@ -12,6 +12,7 @@ import { recomputeMonthlySummary } from "@/lib/analytics/summary";
 import { recomputeDiagnosticInsights } from "@/lib/analytics/diagnose";
 import { recomputeRecommendations } from "@/lib/analytics/recommend";
 import { sanitizeStringField } from "@/lib/file-sanitizer";
+import { triggerLeakAlerts, checkOverBudgetAlerts } from "@/lib/alert-triggers";
 
 export function hashFileBytes(buf: Buffer): string {
   return createHash("sha256").update(buf).digest("hex");
@@ -59,7 +60,27 @@ const CATEGORIES: { pattern: RegExp; category: string }[] = [
   { pattern: /อุปกรณ์|เครื่องมือ|equipment|tool/i, category: "อุปกรณ์" },
 ];
 
-export function categorize(description: string): { category: string; autoCategorized: boolean } {
+export interface UserCategoryRule {
+  keyword: string;
+  category: string;
+}
+
+/**
+ * Categorize a transaction description. User-defined CategoryRule rows
+ * (learned from past category overrides) take priority over the built-in
+ * keyword patterns — `rules` should be pre-sorted by priority/usageCount
+ * (most-trusted first) by the caller.
+ */
+export function categorize(
+  description: string,
+  rules: UserCategoryRule[] = []
+): { category: string; autoCategorized: boolean } {
+  const lowerDesc = description.toLowerCase();
+  for (const rule of rules) {
+    if (rule.keyword && lowerDesc.includes(rule.keyword.toLowerCase())) {
+      return { category: rule.category, autoCategorized: true };
+    }
+  }
   for (const { pattern, category } of CATEGORIES) {
     if (pattern.test(description)) {
       return { category, autoCategorized: true };
@@ -100,7 +121,15 @@ export async function finalizeFileUpload(
   transactions: RawTx[],
   userId: string
 ): Promise<FinalizeResult> {
-  const leakResults = detectLeaks(transactions, (desc) => categorize(desc).category);
+  // User-taught rules (from past category overrides) win over the built-in
+  // keyword patterns — most-trusted (highest priority/usage) first.
+  const userRules = await prisma.categoryRule.findMany({
+    where: { userId },
+    orderBy: [{ priority: "desc" }, { usageCount: "desc" }],
+    select: { keyword: true, category: true },
+  });
+
+  const leakResults = detectLeaks(transactions, (desc) => categorize(desc, userRules).category);
 
   // ── Row-level dedup: fingerprint each row, then compare against what this
   // user has already imported (across ALL their files, not just this one —
@@ -148,7 +177,7 @@ export async function finalizeFileUpload(
       return true;
     })
     .map(({ tx, rowHash, softKey, leak }) => {
-      const { category, autoCategorized } = categorize(tx.description);
+      const { category, autoCategorized } = categorize(tx.description, userRules);
 
       // Same date+description+type as something we already have, but the
       // amount/category differs → likely a corrected re-export. Insert it
@@ -228,6 +257,17 @@ export async function finalizeFileUpload(
     console.error("analytics recompute failed after upload:", err);
   }
 
+  // In-app (+ email/LINE) alerts for what this upload surfaced — non-fatal,
+  // a failed notification shouldn't fail the upload response.
+  try {
+    const criticalCount = txData.filter((t) => t.leakSeverity === "CRITICAL").length;
+    const warningCount = txData.filter((t) => t.leakSeverity === "WARNING").length;
+    await triggerLeakAlerts(userId, fileRecord.id, criticalCount, warningCount);
+    await checkOverBudgetAlerts(userId);
+  } catch (err) {
+    console.error("alert triggers failed after upload:", err);
+  }
+
   return {
     file: {
       id: fileRecord.id,
@@ -244,56 +284,4 @@ export async function finalizeFileUpload(
       flaggedChanged,
     },
   };
-}
-
-// Generates mock transactions for demo — replaced by real parser in production
-export function generateMockTransactions(
-  filename: string,
-  userId: string,
-  fileId: string
-): RawTx[] {
-  const now = new Date();
-  const months = [0, 1, 2, 3, 4, 5].map((i) => {
-    const d = new Date(now);
-    d.setMonth(d.getMonth() - i);
-    return d;
-  });
-
-  const templates = [
-    { desc: "รายได้จากการขาย", type: "INCOME" as const, base: 150000 },
-    { desc: "เงินเดือนพนักงาน", type: "EXPENSE" as const, base: -60000 },
-    { desc: "ค่าเช่าสำนักงาน", type: "EXPENSE" as const, base: -25000 },
-    { desc: "ค่าสาธารณูปโภค (ไฟฟ้า/น้ำ)", type: "EXPENSE" as const, base: -8000 },
-    { desc: "ค่าโฆษณา Facebook Ads", type: "EXPENSE" as const, base: -15000 },
-    { desc: "วัตถุดิบและสินค้า", type: "EXPENSE" as const, base: -30000 },
-    { desc: "ค่าขนส่งและเดินทาง", type: "EXPENSE" as const, base: -5000 },
-    { desc: "รายได้บริการอื่น", type: "INCOME" as const, base: 20000 },
-  ];
-
-  const txs: RawTx[] = [];
-
-  for (const month of months) {
-    for (const tmpl of templates) {
-      const variance = 0.85 + Math.random() * 0.3;
-      const amount = Math.round(tmpl.base * variance);
-      const day = Math.floor(Math.random() * 28) + 1;
-      const date = new Date(month.getFullYear(), month.getMonth(), day);
-      txs.push({ date, description: tmpl.desc, amount, transactionType: tmpl.type });
-    }
-  }
-
-  // Add one spike for demo
-  txs.push({
-    date: new Date(months[0].getFullYear(), months[0].getMonth(), 15),
-    description: "ค่าโฆษณา Facebook Ads (แคมเปญพิเศษ)",
-    amount: -65000,
-    transactionType: "EXPENSE",
-  });
-
-  // userId/fileId unused by the mock generator but kept in the signature so
-  // a future real-parser implementation can use them (e.g. per-user seeding).
-  void userId;
-  void fileId;
-
-  return txs;
 }

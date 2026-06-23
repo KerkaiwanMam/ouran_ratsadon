@@ -37,6 +37,11 @@ export interface BudgetProject {
    *  More descriptive than the normalised budget_type enum. Optional because
    *  older JSON files may not have this field. */
   category_name?: string;
+  /** Line items (ITEM_DESCRIPTION / "ชื่อรายการ") rolled up from the source
+   *  rows — the numbered "(1) ... (2) ..." sub-items shown in the source PDF,
+   *  each with its summed budget. Optional/absent for rows without an item
+   *  description and for older JSON files built before this field existed. */
+  items?: { name: string; amount: number }[];
   province: string;
   plan_name: string;
   flags: RedFlag[];
@@ -188,6 +193,9 @@ export interface SearchResult {
     // powers the category breakdown bar so users can see at a glance what
     // kind of spending their search/filter is surfacing.
     categoryBreakdown: { budgetType: BudgetType; amount: number; percentage: number }[];
+    // Frequent keywords found in project names within the *current*
+    // search/filter results — powers the "KeywordBudget" view.
+    keywords: { keyword: string; count: number }[];
   };
   results: ProjectListItem[];
 }

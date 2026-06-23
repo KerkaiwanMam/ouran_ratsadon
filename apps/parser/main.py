@@ -8,6 +8,7 @@ from parsers.excel_parser import parse_excel
 from parsers.government_budget_parser import parse_government_budget
 from parsers.bank_statement_parser import parse_bank_statement
 from parsers.accounting_export_parser import parse_accounting_export
+from parsers.excel_template_parser import parse_excel_template
 from models import BudgetData, ParseResult
 
 app = FastAPI(
@@ -155,6 +156,45 @@ async def parse_bank(
 
     return BankStatementResponse(
         bank=bank_upper,
+        transactionCount=len(transactions),
+        transactions=transactions,
+        warnings=warnings,
+    )
+
+
+# ─── Excel template endpoint ──────────────────────────────────────────────────
+
+class ExcelTemplateResponse(BaseModel):
+    transactionCount: int
+    transactions: list[dict[str, Any]]
+    warnings: list[str]
+
+
+MAX_TEMPLATE_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
+
+
+@app.post("/parse/excel-template", response_model=ExcelTemplateResponse, tags=["Business Parsers"], summary="แปลง Excel Template (SME)")
+async def parse_excel_template_route(file: UploadFile = File(...)) -> ExcelTemplateResponse:
+    """Parse the controlled SME upload template (Excel/CSV) into normalised transactions."""
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="ไฟล์ว่างเปล่า")
+
+    if len(content) > MAX_TEMPLATE_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="ไฟล์มีขนาดเกิน 20 MB")
+
+    filename = file.filename or "template.xlsx"
+
+    try:
+        transactions = parse_excel_template(content, filename=filename)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+    warnings: list[str] = []
+    if len(transactions) == 0:
+        warnings.append("ไม่พบรายการธุรกรรมในไฟล์ — กรุณาตรวจสอบรูปแบบไฟล์ตามเทมเพลต")
+
+    return ExcelTemplateResponse(
         transactionCount=len(transactions),
         transactions=transactions,
         warnings=warnings,

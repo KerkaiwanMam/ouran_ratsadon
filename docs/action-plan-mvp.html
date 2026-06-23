@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Ouran — MVP Action Plan (Phase 1–2 Launch)</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #fff; color: #111; padding: 24px; font-size: 13px; max-width: 1100px; margin: 0 auto; }
+h1 { font-size: 18px; margin-bottom: 4px; }
+.subtitle { font-size: 11px; color: #64748b; margin-bottom: 16px; }
+
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+.tab { padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e2e8f0; cursor: pointer; font-size: 12px; font-weight: 600; background: #f8fafc; color: #64748b; transition: all .15s; }
+.tab.active { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+.section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #94a3b8; margin: 16px 0 8px; }
+
+/* dependency flow */
+.flow { display: flex; gap: 6px; align-items: stretch; overflow-x: auto; padding: 10px 0 16px; }
+.flow-node { min-width: 150px; border-radius: 10px; padding: 10px 12px; border: 2px solid; font-size: 11px; }
+.flow-arrow { align-self: center; color: #94a3b8; font-size: 16px; font-weight: 700; }
+.fn-a { border-color: #1d4ed8; background: #eff6ff; }
+.fn-b { border-color: #0d9488; background: #f0fdfa; }
+.fn-c { border-color: #9333ea; background: #fdf4ff; }
+.fn-d { border-color: #d97706; background: #fffbeb; }
+.fn-e { border-color: #16a34a; background: #f0fdf4; }
+.flow-node b { display: block; font-size: 12px; margin-bottom: 3px; }
+.flow-node small { color: #64748b; line-height: 1.4; display: block; }
+
+/* phase blocks */
+.phase { border: 1.5px solid #e2e8f0; border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
+.phase-head { padding: 10px 14px; font-weight: 700; font-size: 13px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.ph-a { background: #eff6ff; color: #1e40af; }
+.ph-b { background: #f0fdfa; color: #115e59; }
+.ph-c { background: #fdf4ff; color: #6b21a8; }
+.ph-d { background: #fffbeb; color: #92400e; }
+.ph-e { background: #f0fdf4; color: #166534; }
+.phase-meta { font-size: 10px; font-weight: 600; opacity: .8; }
+.phase-body { padding: 4px 14px 10px; }
+
+.step-row { display: grid; grid-template-columns: 52px 1fr 110px; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f1f5f9; align-items: start; }
+.step-row:last-child { border-bottom: none; }
+.step-id { font-size: 11px; font-weight: 800; color: #1d4ed8; padding-top: 1px; }
+.step-main b { font-size: 12.5px; display: block; margin-bottom: 2px; }
+.step-main p { font-size: 11px; color: #475569; line-height: 1.55; }
+.step-main code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 10.5px; }
+.step-exit { font-size: 10px; color: #166534; background: #f0fdf4; border-radius: 6px; padding: 4px 6px; line-height: 1.4; }
+.dep { display: inline-block; font-size: 9px; font-weight: 700; background: #fee2e2; color: #991b1b; border-radius: 8px; padding: 1px 6px; margin-left: 6px; vertical-align: 1px; }
+.role-tag { display: inline-block; font-size: 9px; font-weight: 700; border-radius: 8px; padding: 1px 6px; margin-left: 4px; vertical-align: 1px; }
+.r-be { background: #dbeafe; color: #1e40af; }
+.r-fe { background: #fef9c3; color: #854d0e; }
+.r-do { background: #dcfce7; color: #166534; }
+.warn { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 8px 10px; font-size: 11px; color: #9a3412; margin: 8px 0; line-height: 1.55; }
+
+/* allocation */
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media (max-width: 760px) { .grid3 { grid-template-columns: 1fr; } .step-row { grid-template-columns: 44px 1fr; } .step-exit { grid-column: 2; } }
+.card { border-radius: 12px; padding: 14px; border: 1.5px solid #e2e8f0; background: #f8fafc; }
+.card h3 { font-size: 13px; margin-bottom: 8px; }
+.item { font-size: 11px; padding: 5px 0; border-bottom: 1px solid #eef2f7; line-height: 1.5; }
+.item:last-child { border-bottom: none; }
+.item small { color: #94a3b8; display: block; font-size: 9.5px; }
+
+/* DoD */
+.dod-group { border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
+.dod-group h3 { font-size: 13px; margin-bottom: 6px; }
+label.check { display: flex; gap: 8px; align-items: flex-start; font-size: 11.5px; padding: 5px 0; border-bottom: 1px solid #f1f5f9; cursor: pointer; line-height: 1.5; }
+label.check:last-child { border-bottom: none; }
+label.check input { margin-top: 2px; accent-color: #16a34a; }
+label.check.done span { text-decoration: line-through; color: #94a3b8; }
+.progress-wrap { position: sticky; top: 0; background: #fff; padding: 8px 0; z-index: 5; }
+.progress-bar { height: 8px; background: #e2e8f0; border-radius: 6px; overflow: hidden; }
+.progress-fill { height: 100%; background: #16a34a; width: 0%; transition: width .25s; }
+.progress-text { font-size: 11px; font-weight: 700; color: #166534; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<h1>🏛 Ouran — MVP Launch Action Plan</h1>
+<div class="subtitle">Scope: Phase 1–2 / MVP Launch เท่านั้น (ตัด Phase 3C / Long-term ออกทั้งหมด) · เรียงตาม dependency ก่อน-หลัง ไม่ผูกวันที่ · จัดทำ 2026-06-12</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="show(event,'plan')">🗺 Execution Plan</div>
+  <div class="tab" onclick="show(event,'alloc')">👥 Resource Allocation</div>
+  <div class="tab" onclick="show(event,'dod')">✅ MVP Definition of Done</div>
+</div>
+
+<!-- ============ TAB 1: EXECUTION PLAN ============ -->
+<div class="panel active" id="panel-plan">
+
+  <div class="section-label">ภาพรวมลำดับงาน — ทำซ้ายไปขวา ลด blocker ให้มากที่สุด</div>
+  <div class="flow">
+    <div class="flow-node fn-a"><b>A · Infra &amp; Security</b><small>Neon DB + Upstash Rate Limit<br>🔒 Blocker ของทุก track</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node fn-b"><b>B · Storage (R2)</b><small>Presigned URL 20MB<br>+ FastAPI malware scan</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node fn-c"><b>C · Stripe Webhook</b><small>ขนานกับ B ได้<br>(ต้องการแค่ A1)</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node fn-d"><b>D · UI Redesign</b><small>ขนานกับ B/C ได้<br>ยกเว้น D4 รอ B เสร็จ</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node fn-e"><b>E · QA → Deploy</b><small>Staging → Production<br>ผ่าน DoD ครบก่อน launch</small></div>
+  </div>
+
+  <div class="warn">⚠️ <b>กฎห้ามถอยหลัง (จาก security audit 2026-06-10):</b> Rate limiting ต้องอยู่ Step 1 ใน <code>middleware.ts</code> เสมอ · ห้ามถอด <code>sanitizeStringField()</code> / <code>containsMacros()</code> ออกจาก upload route · ห้ามลบ field <code>rawValues</code> บน Transaction · Forecast ต้อง disclose ว่าเป็น WMA ไม่ใช่ AI/ML</div>
+
+  <!-- PHASE A -->
+  <div class="phase">
+    <div class="phase-head ph-a">🔵 Phase A — Infra &amp; Security Foundation <span class="phase-meta">Blocker ของทุก phase · เริ่มวันแรก</span></div>
+    <div class="phase-body">
+      <div class="step-row">
+        <div class="step-id">A0</div>
+        <div class="step-main"><b>Pre-flight: Env &amp; Secrets inventory <span class="role-tag r-do">DevOps</span></b>
+          <p>รวบรวม env vars ทั้งหมดลง <code>.env.example</code>: <code>DATABASE_URL</code> (Neon), <code>UPSTASH_REDIS_REST_URL/TOKEN</code>, <code>R2_ACCOUNT_ID / ACCESS_KEY_ID / SECRET_ACCESS_KEY / BUCKET</code>, <code>STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET</code>, <code>CRON_SECRET</code> — ตั้งค่าใน Vercel + Railway ทั้ง preview/production</p></div>
+        <div class="step-exit">✓ .env.example ครบ ทุก env ตั้งใน Vercel/Railway แล้ว</div>
+      </div>
+      <div class="step-row">
+        <div class="step-id">A1</div>
+        <div class="step-main"><b>Neon DB production hardening <span class="role-tag r-do">DevOps</span><span class="role-tag r-be">BE</span></b>
+          <p>แยก Neon branch <code>main</code> (prod) / <code>dev</code> (staging) · เปิด connection pooling (pgbouncer) แล้วใช้ pooled connection string ใน Prisma · รัน <code>prisma migrate deploy</code> · ตรวจ index ตาม <code>docs/database-schema.md</code> · ตั้ง backup/PITR</p></div>
+        <div class="step-exit">✓ migrate ผ่านบน 2 branch · query /api/civic/search เร็วปกติ</div>
+      </div>
+      <div class="step-row">
+        <div class="step-id">A2</div>
+        <div class="step-main"><b>Distributed Rate Limit ด้วย Upstash Redis <span class="dep">depends: A0</span> <span class="role-tag r-be">BE</span></b>
+          <p>ติดตั้ง <code>@upstash/ratelimit</code> + <code>@upstash/redis</code> · แทนที่ in-process <code>Map&lt;string, RateBucket&gt;</code> ใน <code>apps/web/middleware.ts</code> ด้วย sliding window · คง tier เดิม: upload 5/min, auth 10/min, api 60/min · เปิด <code>ephemeralCache</code> ลดจำนวน Redis call · <b>fail-open</b>: ถ้า Redis ล่ม fallback ไป in-memory Map เดิม ห้าม block ผู้ใช้ทั้งระบบ</p></div>
+        <div class="step-exit">✓ rate limit นับข้าม region/instance ได้ · ยังเป็น Step 1 ก่อน JWT decode</div>
+      </div>
+      <div class="step-row">
+        <div class="step-id">A3</div>
+        <div class="step-main"><b>Middleware regression test <span class="dep">depends: A2</span> <span class="role-tag r-be">BE</span></b>
+          <p>เขียน test ยืนยันลำดับ: ① rate limit → ② JWT decode → ③ route matching · ยิง 6 req/min ใส่ <code>/api/files/upload</code> ต้องได้ 429 ตัวที่ 6 · ตรวจ header <code>X-RateLimit-Remaining</code></p></div>
+        <div class="step-exit">✓ test ผ่าน · 429 + Thai error message ถูกต้อง</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE B -->
+  <div class="phase">
+    <div class="phase-head ph-b">🟢 Phase B — Storage: R2 Presigned URL + Malware Scan <span class="phase-meta">depends: Phase A</span></div>
+    <div class="phase-body">
+      <div class="step-row">
+        <div class="step-id">B1</div>
+        <div class="step-main"><b>R2 bucket + CORS + lifecycle <span class="role-tag r-do">DevOps</span></b>
+          <p>สร้าง bucket แยก prod/staging · ตั้ง CORS ให้รับ PUT จาก origin ของแอปเท่านั้น · lifecycle rule ลบ object ที่ key prefix <code>quarantine/</code> อายุ &gt; 1 วันอัตโนมัติ</p></div>
+        <div class="step-exit">✓ PUT จาก origin อื่นถูก CORS ปฏิเสธ</div>
+      </div>
+      <div class="step-row">
+        <div class="step-id">B2</div>
+        <div class="step-main"><b>API ออกตั๋ว: <code>POST /api/files/presign</code> <span class="dep">depends: B1</span> <span class="role-tag r-be">BE</span></b>
+          <p>ตรวจ auth + tier quota (Free 3 ไฟล์/เดือน) → validate นามสกุลตาม whitelist + declared size ≤ <b>20MB</b> → ออก presigned PUT URL อายุสั้น (~10 นาที) ผูก <code>Content-Length</code> เงื่อนไขบน R2 → สร้างแถว FileUpload status=<code>UPLOADING</code> · ใช้ rate limit tier upload 5/min เดิม</p></div>
+        <div class="step-exit">✓ ไฟล์ &gt;20MB หรือนามสกุลผิดถูกปัดตั้งแต่ presign ไม่แตะ memory</div>
+      </div>
+      <div class="step-row">
+        <div class="step-id">B3</div>
+        <div class="step-main"><b>Client direct-upload + confirm <span class="dep">depends: B2</span> <span class="role-tag r-fe">FE</span><span class="role-tag r-be">BE</span></b>
+          <p>FE อัปโหลดตรงเข้า R2 พร้อม progress bar → เรียก <code>POST /api/files/complete</code> → status=<code>PROCESSING</code> → enqueue งานสแกน · แสดงสถานะ "กำลังตรวจสอบไฟล์…" เป็นภาษาไทย</p></div>
+        <div class="step-exit">✓ อัปโหลด 19MB สำเร็จ เห็น progress จริง</div>
+      </div>
+      <div class="step-row">
+        <div class="step-id">B4</div>
+        <div class="step-main"><b>FastAPI scan worker — สแกนแล้วลบทันที <span class="dep">depends: B3</span> <span class="role-tag r-be">BE</span></b>
+          <p>Parser service ดึง object จาก R2 → ตรวจตามลำดับ: ① magic bytes ตรงนามสกุลจริง ② <code>containsMacros()</code> (VBA/macro) ③ zip-bomb / nested archive depth ④ ClamAV scan (ผ่าน <code>clamd</code> container ข้าง FastAPI) · <b>fail ข้อใดข้อหนึ่ง → ลบ object ออกจาก R2 ทันที + status=ERROR + audit log</b> · ผ่านครบ → ส่งต่อ parse pipeline เดิม (sanitizeStringField ยังทำงานก่อน DB insert)</p></div>
+        <div class="step-exit">✓ ไฟล์ EICAR ถูกลบจาก R2 ภายใน scan cycle เดียว + user เห็น error ไทย</div>
+      </div>
+      <div class="step-row">
+        <div class="step-id">B5</div>
+        <div class="step-main"><b>Orphan cleaner: ปิด TODO stub <span class="dep">depends: B4</span> <span class="role-tag r-be">BE</span></b>
+          <p>เติม logic ลบ R2 object จริงใน <code>lib/orphan-cleaner.ts</code> (stub ที่ค้างจาก Fix #4) · ตั้ง Vercel Cron <code>*/30 * * * *</code> ยิง <code>GET /api/internal/cleanup-orphans</code> พร้อม <code>CRON_SECRET</code></p></div>
+        <div class="step-exit">✓ orphan UPLOADING &gt;30 นาที ถูกลบทั้ง DB row และ R2 object</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE C -->
+  <div class="phase">
+    <div class="phase-head ph-c">🟣 Phase C — Stripe Webhook &amp; Tier Management <span class="phase-meta">depends: A1 เท่านั้น — ทำขนานกับ B ได้</span></div>
+    <div class="phase-body">
+      <div class="step-row">
+        <div class="step-id">C1</div>
+        <div class="step-main"><b>Webhook endpoint + signature verify <span class="role-tag r-be">BE</span></b>
+          <p><code>POST /api/webhooks/stripe</code> อ่าน <b>raw body</b> (ห้ามให้ Next.js parse JSON ก่อน) → <code>stripe.webhooks.constructEvent()</code> ด้วย <code>STRIPE_WEBHOOK_SECRET</code> · ตอบ 200 เร็วที่สุด แล้วประมวลผลต่อ · ใส่ route นี้ใน middleware matcher แบบไม่ติด auth (Stripe ไม่มี JWT) แต่ยังอยู่ใต้ rate limit tier api</p></div>
+        <div class="step-exit">✓ payload ปลอม signature ผิด → 400 ทุกครั้ง</div>
+      </div>
+      <div class="step-row">
+        <div class="step-id">C2</div>
+        <div class="step-main"><b>แกะ 3 event หลัก → จัดการ tier <span class="dep">depends: C1</span> <span class="role-tag r-be">BE</span></b>
+          <p>① <code>invoice.paid</code> / <code>checkout.session.completed</code> → activate/renew Pro (฿299) หรือ Team (฿799) ตาม price ID · ② <code>customer.subscription.updated</code> → sync เปลี่ยนแผน/upgrade/downgrade + สถานะ <code>past_due</code> → grace period · ③ <code>customer.subscription.deleted</code> → downgrade เป็น FREE ทันทีเมื่อสิ้นรอบบิล · <b>อย่าแตะ</b> <code>isManuallyGranted</code> — ให้ webhook เขียนเฉพาะ subscription ที่มาจาก Stripe</p></div>
+        <div class="step-exit">✓ ทั้ง 3 event เปลี่ยน tier ใน DB ถูกต้อง · manual grant ไม่ถูก override</div>
+      </div>
+      <div class="step-row">
+        <div class="step-id">C3</div>
+        <div class="step-main"><b>Idempotency + retry safety <span class="dep">depends: C2</span> <span class="role-tag r-be">BE</span></b>
+          <p>ตาราง <code>StripeEventLog</code> เก็บ <code>event.id</code> แบบ unique — event ซ้ำ (Stripe retry) ต้อง no-op · ครอบ handler ด้วย <code>prisma.$transaction</code> ป้องกัน partial update</p></div>
+        <div class="step-exit">✓ ยิง event เดิมซ้ำ 3 ครั้ง ผล DB เท่ากับ 1 ครั้ง</div>
+      </div>
+      <div class="step-row">
+        <div class="step-id">C4</div>
+        <div class="step-main"><b>ทดสอบครบวงจรด้วย Stripe CLI <span class="dep">depends: C3</span> <span class="role-tag r-be">BE</span><span class="role-tag r-do">DevOps</span></b>
+          <p><code>stripe listen --forward-to</code> + <code>stripe trigger</code> ทั้ง 3 event · ทดสอบ flow จริง: checkout → trial 14 วัน → paid → cancel · ลงทะเบียน webhook endpoint บน Stripe Dashboard (test + live แยกกัน)</p></div>
+        <div class="step-exit">✓ subscribe→cancel ครบ loop บน test mode โดยไม่แก้ DB มือ</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE D -->
+  <div class="phase">
+    <div class="phase-head ph-d">🟠 Phase D — Frontend Redesign: 2 โหมด 2 บุคลิก <span class="phase-meta">เริ่มขนานได้ตั้งแต่ A เสร็จ · D4 รอ B</span></div>
+    <div class="phase-body">
+      <div class="step-row">
+        <div class="step-id">D1</div>
+        <div class="step-main"><b>Design tokens 2 theme ใน Tailwind <span class="role-tag r-fe">FE</span></b>
+          <p>อ่าน <code>docs/design-system.md</code> ก่อน · กำหนด CSS variables แยก route group: <b>Civic "ผังเมือง"</b> — โทน navy/slate + amber accent, grid line แบบ blueprint, typography ราชการอ่านง่าย · <b>Business "โมเดิร์นเอกชน"</b> — โทนขาวสะอาด + emerald/teal accent, การ์ดเงาเบา แบบ SaaS · ห้าม inline style, ใช้ Tailwind + shadcn/ui เท่านั้น</p></div>
+        <div class="step-exit">✓ theme สลับตาม layout ของ (civic) / (business) อัตโนมัติ</div>
+      </div>
+      <div class="step-row">
+        <div class="step-id">D2</div>
+        <div class="step-main"><b>Layout shell + navigation refresh <span class="dep">depends: D1</span> <span class="role-tag r-fe">FE</span></b>
+          <p>ปรับ shell ของ <code>(civic)</code>: header แบบ public portal, breadcrumb, fiscal context bar · shell ของ <code>(business)</code>: sidebar dashboard, workspace switcher · ตรวจ responsive + dark mode ทั้ง 2 โหมด</p></div>
+        <div class="step-exit">✓ ทุกหน้าหลักใช้ shell ใหม่ ไม่มีหน้า "ตกค้าง" theme เก่า</div>
+      </div>
+      <div class="step-row">
+        <div class="step-id">D3</div>
+        <div class="step-main"><b>Component refresh รายหน้า <span class="dep">depends: D2</span> <span class="role-tag r-fe">FE</span></b>
+          <p>Civic: <code>/explore</code> treemap + drill-down, <code>/search</code>, <code>/project/[id]</code>, <code>/fiscal-overview</code>, <code>/compare</code> · Business: dashboard, <code>/analytics</code> (4 tier), settings · คง OG image + share ต่อหน้า · UI text ไทยทั้งหมด</p></div>
+        <div class="step-exit">✓ visual QA ผ่านทุกหน้า ทั้ง light/dark · Lighthouse a11y ≥ 90</div>
+      </div>
+      <div class="step-row">
+        <div class="step-id">D4</div>
+        <div class="step-main"><b>Upload UX ใหม่ (presigned flow) <span class="dep">depends: B3, D2</span> <span class="role-tag r-fe">FE</span></b>
+          <p>หน้าอัปโหลดรองรับ 3 สถานะใหม่: กำลังอัปโหลด (progress %) → กำลังสแกนไฟล์ → ผลลัพธ์ (ผ่าน/ติดมัลแวร์/เกิน 20MB) · error message ไทยเข้าใจง่าย · แสดง quota คงเหลือของ Free tier</p></div>
+        <div class="step-exit">✓ ทุก error path มีข้อความไทย ไม่มี raw error หลุดถึง user</div>
+      </div>
+      <div class="step-row">
+        <div class="step-id">D5</div>
+        <div class="step-main"><b>Pricing + Billing UI sync กับ Stripe <span class="dep">depends: C2, D2</span> <span class="role-tag r-fe">FE</span></b>
+          <p>หน้า pricing แสดง Free / Pro ฿299 / Team ฿799 · billing settings แสดงสถานะ subscription จริงจาก webhook (active, trial, past_due, canceled) + ปุ่ม manage ผ่าน Stripe Customer Portal</p></div>
+        <div class="step-exit">✓ เปลี่ยนแผนบน Stripe test แล้ว UI อัปเดตตรงตามจริง</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE E -->
+  <div class="phase">
+    <div class="phase-head ph-e">🟩 Phase E — QA → Staging → Production Launch <span class="phase-meta">depends: B, C, D ครบ</span></div>
+    <div class="phase-body">
+      <div class="step-row">
+        <div class="step-id">E1</div>
+        <div class="step-main"><b>Integration test ตาม DoD <span class="role-tag r-be">BE</span><span class="role-tag r-fe">FE</span></b>
+          <p>ไล่ checklist ใน tab "MVP Definition of Done" ทุกข้อบน staging (Vercel preview + Neon dev branch + R2 staging bucket + Stripe test mode)</p></div>
+        <div class="step-exit">✓ DoD ผ่าน 100% บน staging</div>
+      </div>
+      <div class="step-row">
+        <div class="step-id">E2</div>
+        <div class="step-main"><b>Production cutover <span class="dep">depends: E1</span> <span class="role-tag r-do">DevOps</span></b>
+          <p>สลับ env เป็น production ทั้งชุด → <code>prisma migrate deploy</code> บน Neon main → ลงทะเบียน Stripe <b>live</b> webhook → ตั้ง Vercel Cron orphan cleanup → smoke test: civic explore, สมัครสมาชิก, อัปโหลด, checkout จริง 1 รายการแล้ว refund</p></div>
+        <div class="step-exit">✓ smoke test ผ่านบน production จริง</div>
+      </div>
+      <div class="step-row">
+        <div class="step-id">E3</div>
+        <div class="step-main"><b>Post-launch monitoring (48 ชม.แรก) <span class="dep">depends: E2</span> <span class="role-tag r-do">DevOps</span></b>
+          <p>เฝ้าดู: Upstash analytics (อัตรา 429), Stripe webhook delivery success rate, Neon connection count, error log ของ FastAPI scan worker · เตรียม rollback plan: Vercel instant rollback + Neon PITR</p></div>
+        <div class="step-exit">✓ ไม่มี incident P1 ใน 48 ชม. · webhook success ≥ 99%</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAB 2: RESOURCE ALLOCATION ============ -->
+<div class="panel" id="panel-alloc">
+  <div class="section-label">แยกเนื้องานตามตำแหน่ง — ตัวเลขคือ step ใน Execution Plan</div>
+  <div class="grid3">
+    <div class="card">
+      <h3>🔵 Backend</h3>
+      <div class="item"><b>A2–A3</b> Upstash distributed rate limit ใน middleware + regression test<small>critical path — ทำก่อนทุกอย่าง</small></div>
+      <div class="item"><b>B2</b> Presign API (20MB cap, whitelist, quota)<small>รอ R2 bucket จาก DevOps</small></div>
+      <div class="item"><b>B4</b> FastAPI scan worker (magic bytes, macro, zip-bomb, ClamAV) + ลบไฟล์ทันที<small>ชิ้นใหญ่สุดของ track storage</small></div>
+      <div class="item"><b>B5</b> Orphan cleaner — เติม R2 deletion<small>ปิด TODO จาก security audit</small></div>
+      <div class="item"><b>C1–C4</b> Stripe webhook ทั้ง track (signature, 3 events, idempotency, CLI test)<small>ทำขนานกับ B ได้ ถ้ามี BE 2 คน</small></div>
+      <div class="item"><b>E1</b> Integration test ฝั่ง API<small>ร่วมกับ FE</small></div>
+    </div>
+    <div class="card">
+      <h3>🟡 Frontend</h3>
+      <div class="item"><b>D1</b> Design tokens 2 theme (Civic ผังเมือง / Business โมเดิร์น)<small>เริ่มได้ทันทีตั้งแต่วันแรก — ไม่รอ backend</small></div>
+      <div class="item"><b>D2</b> Layout shells + nav + dark mode<small></small></div>
+      <div class="item"><b>D3</b> Component refresh ทุกหน้าหลัก 2 โหมด<small>ชิ้นใหญ่สุดของ track redesign</small></div>
+      <div class="item"><b>B3 + D4</b> Direct-upload client + Upload UX 3 สถานะ<small>จุด sync กับ BE — นัด interface contract ล่วงหน้า</small></div>
+      <div class="item"><b>D5</b> Pricing/Billing UI ผูกสถานะ Stripe<small>รอ C2</small></div>
+      <div class="item"><b>E1</b> Visual QA + Lighthouse + integration test ฝั่ง UI<small></small></div>
+    </div>
+    <div class="card">
+      <h3>🟢 DevOps / Infra</h3>
+      <div class="item"><b>A0</b> Env & secrets inventory ทั้ง Vercel/Railway<small>วันแรก ปลดล็อกทุกคน</small></div>
+      <div class="item"><b>A1</b> Neon branch แยก prod/dev + pooling + backup<small></small></div>
+      <div class="item"><b>B1</b> R2 bucket + CORS + lifecycle rule<small>ส่งมอบให้ BE ภายในต้น Phase B</small></div>
+      <div class="item"><b>B4 (ร่วม)</b> ClamAV container ข้าง FastAPI บน Railway<small></small></div>
+      <div class="item"><b>C4 (ร่วม)</b> ลงทะเบียน webhook endpoint test/live<small></small></div>
+      <div class="item"><b>E2–E3</b> Production cutover + cron + monitoring 48 ชม. + rollback plan<small>เจ้าภาพหลักของ launch day</small></div>
+    </div>
+  </div>
+
+  <div class="section-label">จุดต้องประสานข้ามตำแหน่ง (handoff ที่พลาดบ่อย)</div>
+  <div class="card" style="background:#fff">
+    <div class="item">🤝 <b>B2↔B3</b> — BE กับ FE ตกลง response shape ของ presign API (URL, key, expiry) ก่อนเริ่มเขียนทั้งคู่</div>
+    <div class="item">🤝 <b>B1→B2</b> — DevOps ต้องส่ง bucket credentials ให้ BE ก่อน ไม่งั้น B2 block</div>
+    <div class="item">🤝 <b>C2→D5</b> — BE แจ้ง FE ว่า subscription status มีค่าอะไรบ้าง (active/trialing/past_due/canceled) ก่อนทำ billing UI</div>
+    <div class="item">🤝 <b>A2</b> — แจ้งทุกคนว่า rate limit เปลี่ยนเป็น distributed แล้ว — dev ที่ test local ต้องมี Upstash dev database หรือ flag ปิด</div>
+  </div>
+</div>
+
+<!-- ============ TAB 3: DOD ============ -->
+<div class="panel" id="panel-dod">
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="pfill"></div></div>
+    <div class="progress-text" id="ptext">0 / 0 ผ่าน</div>
+  </div>
+
+  <div class="dod-group">
+    <h3>🔐 Security &amp; Rate Limiting</h3>
+    <label class="check"><input type="checkbox" data-k="s1"><span>Rate limit เป็น Step 1 ใน middleware (ก่อน JWT/DB) — ยืนยันด้วย test อัตโนมัติ</span></label>
+    <label class="check"><input type="checkbox" data-k="s2"><span>Upstash นับ quota ข้าม instance ได้จริง (ยิงจาก 2 region/2 เครื่อง รวมกันเกิน limit แล้วโดน 429)</span></label>
+    <label class="check"><input type="checkbox" data-k="s3"><span>Redis ล่ม → ระบบ fail-open ไป in-memory ไม่ block ผู้ใช้ทั้งหมด</span></label>
+    <label class="check"><input type="checkbox" data-k="s4"><span>sanitizeStringField() + containsMacros() ยังถูกเรียกครบใน upload pipeline (ไม่ถูกถอดระหว่าง refactor)</span></label>
+    <label class="check"><input type="checkbox" data-k="s5"><span>ไม่มี secret รั่วใน client bundle / git history — สแกนด้วย gitleaks หรือเทียบเท่า</span></label>
+  </div>
+
+  <div class="dod-group">
+    <h3>📦 Storage &amp; Malware Scan</h3>
+    <label class="check"><input type="checkbox" data-k="f1"><span>ไฟล์ &gt; 20MB ถูกปฏิเสธตั้งแต่ขั้น presign (ไม่เคยแตะ server memory)</span></label>
+    <label class="check"><input type="checkbox" data-k="f2"><span>นามสกุลนอก whitelist ขอ presigned URL ไม่ได้</span></label>
+    <label class="check"><input type="checkbox" data-k="f3"><span>EICAR test file → ถูกลบจาก R2 ทันที + status=ERROR + แจ้ง user เป็นภาษาไทย</span></label>
+    <label class="check"><input type="checkbox" data-k="f4"><span>XLSX ฝัง macro (vbaProject.bin) ถูกตรวจจับและปฏิเสธ</span></label>
+    <label class="check"><input type="checkbox" data-k="f5"><span>Presigned URL หมดอายุแล้วใช้ PUT ไม่ได้</span></label>
+    <label class="check"><input type="checkbox" data-k="f6"><span>Orphan cleanup cron ลบทั้ง DB row และ R2 object — ทดสอบด้วยการอัปโหลดค้างจริง</span></label>
+    <label class="check"><input type="checkbox" data-k="f7"><span>Free tier quota 3 ไฟล์/เดือนถูกบังคับที่ขั้น presign</span></label>
+  </div>
+
+  <div class="dod-group">
+    <h3>💳 Stripe &amp; Tier Management</h3>
+    <label class="check"><input type="checkbox" data-k="p1"><span>Signature ผิด → 400 ทุกครั้ง · payload ถูก → 200 ภายใน 5 วินาที</span></label>
+    <label class="check"><input type="checkbox" data-k="p2"><span>invoice.paid → tier เปลี่ยนเป็น Pro/Team ถูกต้องตาม price ID</span></label>
+    <label class="check"><input type="checkbox" data-k="p3"><span>subscription.updated → upgrade/downgrade/past_due sync ถูกต้อง</span></label>
+    <label class="check"><input type="checkbox" data-k="p4"><span>subscription.deleted → downgrade เป็น FREE · ฟีเจอร์ Pro ถูกล็อกทันทีในรอบถัดไป</span></label>
+    <label class="check"><input type="checkbox" data-k="p5"><span>Event ซ้ำ (Stripe retry) → idempotent ไม่เกิด double-write</span></label>
+    <label class="check"><input type="checkbox" data-k="p6"><span>isManuallyGranted ยังทำงาน — webhook ไม่ override สิทธิ์ที่ admin ให้มือ</span></label>
+    <label class="check"><input type="checkbox" data-k="p7"><span>Trial 14 วันเริ่ม-จบถูกต้อง · live webhook ลงทะเบียนบน Stripe Dashboard แล้ว</span></label>
+  </div>
+
+  <div class="dod-group">
+    <h3>🎨 Frontend (2 โหมด)</h3>
+    <label class="check"><input type="checkbox" data-k="u1"><span>Civic theme "ผังเมือง" และ Business theme "โมเดิร์นเอกชน" สลับตาม route group ถูกต้อง ไม่มีหน้าตกค้าง</span></label>
+    <label class="check"><input type="checkbox" data-k="u2"><span>UI text ภาษาไทยทั้งหมด · error message ทุกจุดเป็นไทยอ่านเข้าใจ</span></label>
+    <label class="check"><input type="checkbox" data-k="u3"><span>Responsive (มือถือ ≥ 375px) + dark mode ผ่านทุกหน้าหลักทั้ง 2 โหมด</span></label>
+    <label class="check"><input type="checkbox" data-k="u4"><span>Upload UX 3 สถานะ (อัปโหลด/สแกน/ผลลัพธ์) ทำงานครบทุก path รวม error</span></label>
+    <label class="check"><input type="checkbox" data-k="u5"><span>Lighthouse: Performance ≥ 80, Accessibility ≥ 90 บนหน้า /explore และ dashboard</span></label>
+    <label class="check"><input type="checkbox" data-k="u6"><span>OG image + share URL ยังทำงานทุกหน้า Civic · cite แหล่งข้อมูลครบทุกหน้า</span></label>
+    <label class="check"><input type="checkbox" data-k="u7"><span>Forecast UI ยังแสดง disclosure "Weighted Moving Average — ไม่ใช่ AI/ML"</span></label>
+  </div>
+
+  <div class="dod-group">
+    <h3>🚀 Ops &amp; Launch Readiness</h3>
+    <label class="check"><input type="checkbox" data-k="o1"><span>prisma migrate deploy ผ่านบน Neon production · backup/PITR เปิดใช้</span></label>
+    <label class="check"><input type="checkbox" data-k="o2"><span>Env vars production ครบทุกตัวตาม .env.example · ไม่มีค่า test ปนใน prod</span></label>
+    <label class="check"><input type="checkbox" data-k="o3"><span>Vercel Cron orphan cleanup ตั้งแล้ว (*/30) + CRON_SECRET ใช้งานจริง</span></label>
+    <label class="check"><input type="checkbox" data-k="o4"><span>Smoke test production: explore → สมัคร → อัปโหลด → checkout จริง 1 รายการ + refund สำเร็จ</span></label>
+    <label class="check"><input type="checkbox" data-k="o5"><span>Rollback plan เขียนเป็นลายลักษณ์อักษร (Vercel rollback + Neon PITR + Stripe webhook disable)</span></label>
+    <label class="check"><input type="checkbox" data-k="o6"><span>Monitoring 48 ชม.แรกมีเจ้าภาพ: Upstash 429 rate, Stripe delivery, Neon connections, scan worker errors</span></label>
+  </div>
+</div>
+
+<script>
+function show(e, id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  e.target.classList.add('active');
+}
+// DoD checklist persistence + progress
+const boxes = document.querySelectorAll('label.check input');
+const KEY = 'ouran-dod-v1';
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (_) {}
+boxes.forEach(b => {
+  if (saved[b.dataset.k]) { b.checked = true; b.closest('label').classList.add('done'); }
+  b.addEventListener('change', () => {
+    b.closest('label').classList.toggle('done', b.checked);
+    saved[b.dataset.k] = b.checked;
+    try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (_) {}
+    refresh();
+  });
+});
+function refresh() {
+  const total = boxes.length;
+  const done = [...boxes].filter(b => b.checked).length;
+  document.getElementById('pfill').style.width = (done / total * 100) + '%';
+  document.getElementById('ptext').textContent = done + ' / ' + total + ' ผ่าน' + (done === total ? ' 🎉 พร้อม Launch!' : '');
+}
+refresh();
+</script>
+</body>
+</html>

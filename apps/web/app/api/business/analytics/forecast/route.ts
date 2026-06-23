@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyTokenFromRequest } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { recomputeForecastSnapshot, getLatestForecastSnapshot } from "@/lib/analytics/predict";
+import { triggerRunwayAlert } from "@/lib/alert-triggers";
 
 // GET  /api/business/analytics/forecast            — latest persisted snapshot
 // POST /api/business/analytics/forecast            — recompute + persist a new snapshot
@@ -73,6 +74,14 @@ export async function POST(req: NextRequest) {
       sufficiency: result.sufficiency,
       disclaimer: result.disclaimer,
     });
+  }
+
+  if (typeof result.runway === "number" && Number.isFinite(result.runway)) {
+    try {
+      await triggerRunwayAlert(payload.sub, Math.round(result.runway * 10) / 10);
+    } catch (err) {
+      console.error("runway alert trigger failed:", err);
+    }
   }
 
   const snapshot = await getLatestForecastSnapshot(payload.sub);

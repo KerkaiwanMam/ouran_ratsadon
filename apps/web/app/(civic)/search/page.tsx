@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import Link from "next/link";
@@ -8,6 +8,7 @@ import { Search, X, SlidersHorizontal, ArrowUpDown, Download, Bookmark, Bookmark
 import FilterPanel, { type FilterState } from "@/components/civic/FilterPanel";
 import RedFlagBadge from "@/components/civic/RedFlagBadge";
 import StatStrip from "@/components/civic/StatStrip";
+import KeywordCloud from "@/components/shared/KeywordCloud";
 import type { SearchResult, MinistryListItem, BudgetType } from "@/types/civic";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -34,6 +35,15 @@ const BUDGET_TYPE_COLORS: Record<string, string> = {
 };
 
 export default function SearchPage() {
+  // useSearchParams() requires a Suspense boundary for static prerendering
+  return (
+    <Suspense fallback={null}>
+      <SearchPageContent />
+    </Suspense>
+  );
+}
+
+function SearchPageContent() {
   // Read initial values from URL so links like /search?year=2569&q=... work
   const urlParams = useSearchParams();
 
@@ -60,6 +70,7 @@ export default function SearchPage() {
   const [sort, setSort] = useState("amount_desc");
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(true);
+  const [viewMode, setViewMode] = useState<"list" | "keyword">("list");
   const [filters, setFilters] = useState<FilterState>({
     ministries: [],
     budgetTypes: [],
@@ -152,6 +163,13 @@ export default function SearchPage() {
   async function handleDeleteSearch(id: string) {
     await fetch(`/api/civic/saved-searches?id=${id}`, { method: "DELETE" });
     mutateSaved();
+  }
+
+  // KeywordBudget view — clicking a keyword filters the project list to that
+  // term and switches back to the table so the user sees the results.
+  function handleKeywordSelect(keyword: string) {
+    setQ(keyword);
+    setViewMode("list");
   }
 
   // Fetch ministry list for filter panel
@@ -555,8 +573,34 @@ export default function SearchPage() {
             </div>
           )}
 
-          {/* Result table */}
+          {/* Result table / KeywordBudget view */}
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+            {/* View toggle */}
+            <div className="flex items-center px-4 py-2 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-1 bg-gray-50 dark:bg-gray-800 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 cursor-pointer ${
+                    viewMode === "list"
+                      ? "bg-white dark:bg-gray-900 text-[#7F77DD] shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  }`}
+                >
+                  รายการ
+                </button>
+                <button
+                  onClick={() => setViewMode("keyword")}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 cursor-pointer ${
+                    viewMode === "keyword"
+                      ? "bg-white dark:bg-gray-900 text-[#7F77DD] shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  }`}
+                >
+                  KeywordBudget
+                </button>
+              </div>
+            </div>
+
             {isLoading ? (
               <div className="flex items-center justify-center py-16 text-gray-400">
                 กำลังค้นหา...
@@ -566,6 +610,12 @@ export default function SearchPage() {
                 <Search size={32} className="mb-2 opacity-40" />
                 <p>ไม่พบโครงการที่ตรงกับเงื่อนไข</p>
               </div>
+            ) : viewMode === "keyword" ? (
+              <KeywordCloud
+                keywords={results.stats.keywords}
+                onSelect={handleKeywordSelect}
+                hint='คีย์เวิร์ดที่พบบ่อยในชื่อโครงการของผลลัพธ์ปัจจุบัน — คลิกเพื่อกรองดูโครงการที่เกี่ยวข้อง'
+              />
             ) : (
               <>
                 <table className="w-full text-sm">

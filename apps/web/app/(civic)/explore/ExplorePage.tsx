@@ -6,9 +6,7 @@ import useSWR from "swr";
 import MinistryTreemap from "@/components/civic/MinistryTreemap";
 import SunburstChart from "@/components/civic/SunburstChart";
 import BudgetMapView from "@/components/civic/BudgetMapView";
-import StatStrip from "@/components/civic/StatStrip";
 import RedFlagBadge from "@/components/civic/RedFlagBadge";
-import { formatCurrency } from "@/utils/format";
 import type { BudgetYearSummary, MinistryListItem } from "@/types/civic";
 import type { ProvinceData } from "@/lib/civic-cache";
 import Link from "next/link";
@@ -94,41 +92,46 @@ export default function ExplorePage({ data, availableYears, provinces }: Props) 
   const stats = [
     {
       label: "งบประมาณรวม",
-      value: `฿${(data.totalBudget / 1e12).toFixed(2)} ล้านล้าน`,
-      highlight: true,
+      value: `฿${(data.totalBudget / 1e12).toFixed(2)}`,
+      unit: "ล้านล้านบาท",
+      tone: "accent" as const,
     },
     {
       label: "กระทรวง",
-      value: `${data.ministryCount} หน่วยงาน`,
+      value: `${data.ministryCount}`,
+      unit: "หน่วยงาน",
+      tone: "default" as const,
     },
     {
       label: "โครงการ",
-      value: `${data.projectCount.toLocaleString()} โครงการ`,
+      value: data.projectCount.toLocaleString(),
+      unit: "โครงการ",
+      tone: "default" as const,
     },
     {
       label: "ธงแดง",
-      value: `${data.redFlagCount} โครงการ`,
-      danger: data.redFlagCount > 0,
+      value: `${data.redFlagCount}`,
+      unit: "โครงการ",
+      tone: data.redFlagCount > 0 ? ("danger" as const) : ("default" as const),
     },
   ];
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       {/* Header controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
         <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            งบอุ้มราษฎร Explorer
+          <h1 className="text-2xl font-bold tracking-tight">
+            <span className="text-gradient-accent">งบอุ้มราษฎร</span>{" "}
+            <span className="text-gray-900 dark:text-gray-100">Explorer</span>
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            ปีงบประมาณ{" "}
-            <span className="font-medium text-gray-800 dark:text-gray-200">
-              พ.ศ. {year}
-            </span>
+            ผังเม็ดเงินงบประมาณแผ่นดิน ปีงบประมาณ{" "}
+            <span className="font-semibold text-accent">พ.ศ. {year}</span>
             {" · "}
             <a
               href={`/api/civic/export/json?year=${year}`}
-              className="text-[#7F77DD] hover:underline inline-flex items-center gap-1"
+              className="text-accent-2 hover:underline inline-flex items-center gap-1"
             >
               <Download size={12} />
               ดาวน์โหลด JSON
@@ -138,15 +141,15 @@ export default function ExplorePage({ data, availableYears, provinces }: Props) 
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Year selector */}
-          <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-accent/20 rounded-lg p-1">
             {years.map((y) => (
               <button
                 key={y}
                 onClick={() => changeYear(y)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors cursor-pointer ${
                   y === year
-                    ? "bg-[#7F77DD] text-white"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    ? "bg-gradient-accent text-white"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-accent-soft"
                 }`}
               >
                 {y}
@@ -155,7 +158,7 @@ export default function ExplorePage({ data, availableYears, provinces }: Props) 
           </div>
 
           {/* View switcher */}
-          <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-white dark:bg-gray-900 border border-accent/20 rounded-lg p-1">
             {(
               [
                 { mode: "treemap", icon: <LayoutGrid size={16} />, label: "Treemap" },
@@ -168,13 +171,14 @@ export default function ExplorePage({ data, availableYears, provinces }: Props) 
                 key={mode}
                 onClick={() => setView(mode)}
                 title={label}
-                className={`p-1.5 rounded-md transition-colors ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer ${
                   view === mode
-                    ? "bg-[#7F77DD] text-white"
-                    : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    ? "bg-gradient-accent text-white"
+                    : "text-gray-500 hover:bg-accent-soft"
                 }`}
               >
                 {icon}
+                <span className="hidden lg:inline text-xs font-medium">{label}</span>
               </button>
             ))}
           </div>
@@ -182,7 +186,7 @@ export default function ExplorePage({ data, availableYears, provinces }: Props) 
           {/* Search link */}
           <Link
             href={`/search?year=${year}`}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:border-[#7F77DD] hover:text-[#7F77DD] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 text-sm border border-accent/20 rounded-lg bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:border-accent hover:text-accent transition-colors"
           >
             <Search size={14} />
             ค้นหาโครงการ
@@ -190,9 +194,34 @@ export default function ExplorePage({ data, availableYears, provinces }: Props) 
         </div>
       </div>
 
-      {/* Stat strip */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 mb-4">
-        <StatStrip stats={stats} />
+      {/* Stat cards — key numbers first, readable at a glance */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        {stats.map((s) => (
+          <div
+            key={s.label}
+            className="relative overflow-hidden bg-white dark:bg-gray-900 border border-accent/15 rounded-xl px-4 py-3.5"
+          >
+            <span
+              className={`absolute inset-x-0 top-0 h-0.5 ${
+                s.tone === "danger" ? "bg-red-500" : "bg-gradient-accent"
+              } ${s.tone === "default" ? "opacity-30" : ""}`}
+              aria-hidden="true"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{s.label}</p>
+            <p
+              className={`text-2xl font-black leading-none tracking-tight ${
+                s.tone === "accent"
+                  ? "text-gradient-accent w-fit"
+                  : s.tone === "danger"
+                  ? "text-red-600 dark:text-red-400"
+                  : "text-gray-900 dark:text-gray-100"
+              }`}
+            >
+              {s.value}
+            </p>
+            <p className="text-[11px] text-gray-400 mt-1">{s.unit}</p>
+          </div>
+        ))}
       </div>
 
       {/* Fiscal context bar */}
@@ -200,23 +229,32 @@ export default function ExplorePage({ data, availableYears, provinces }: Props) 
 
       {/* Main content */}
       {view === "treemap" && (
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+        <ViewPanel
+          title="ผังเม็ดเงินตามกระทรวง"
+          caption="ขนาดบล็อก = วงเงินงบประมาณ — คลิกเพื่อเจาะลึกถึงระดับโครงการ"
+        >
           <MinistryTreemap
             ministries={data.ministries}
             fullData={data.ministriesWithDepts}
             year={year}
           />
-        </div>
+        </ViewPanel>
       )}
       {view === "sunburst" && (
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+        <ViewPanel
+          title="สัดส่วนงบประมาณแบบวงแหวน"
+          caption="วงใน = กระทรวง · วงนอก = หน่วยงานในสังกัด"
+        >
           <SunburstChart ministries={data.ministriesWithDepts} year={year} />
-        </div>
+        </ViewPanel>
       )}
       {view === "map" && (
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+        <ViewPanel
+          title="งบประมาณรายจังหวัด"
+          caption="ความเข้มของสี = วงเงินที่ลงพื้นที่จังหวัดนั้น"
+        >
           <BudgetMapView provinces={provinces} year={year} />
-        </div>
+        </ViewPanel>
       )}
       {view === "table" && (
         <MinistryTable ministries={data.ministries} year={year} />
@@ -231,6 +269,29 @@ export default function ExplorePage({ data, availableYears, provinces }: Props) 
   );
 }
 
+// ─── View panel wrapper ───────────────────────────────────────────────────────
+
+function ViewPanel({
+  title,
+  caption,
+  children,
+}: {
+  title: string;
+  caption: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative overflow-hidden bg-white dark:bg-gray-900 border border-accent/15 rounded-2xl">
+      <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent" aria-hidden="true" />
+      <div className="px-5 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+        <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100">{title}</h2>
+        <p className="text-xs text-gray-400 mt-0.5">{caption}</p>
+      </div>
+      <div className="p-4">{children}</div>
+    </div>
+  );
+}
+
 // ─── Table view ───────────────────────────────────────────────────────────────
 
 function MinistryTable({
@@ -241,15 +302,19 @@ function MinistryTable({
   year: string;
 }) {
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <div className="relative overflow-hidden bg-white dark:bg-gray-900 border border-accent/15 rounded-2xl">
+      <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-accent" aria-hidden="true" />
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-gray-50 dark:bg-gray-800 text-left border-b border-gray-200 dark:border-gray-700">
+            <th className="px-4 py-3 font-medium text-gray-600 dark:text-gray-300 w-12 text-center">
+              #
+            </th>
             <th className="px-4 py-3 font-medium text-gray-600 dark:text-gray-300">
               กระทรวง
             </th>
             <th className="px-4 py-3 font-medium text-gray-600 dark:text-gray-300 text-right">
-              งบประมาณ
+              งบประมาณ (พันล้านบาท)
             </th>
             <th className="px-4 py-3 font-medium text-gray-600 dark:text-gray-300 text-right">
               สัดส่วน
@@ -265,15 +330,26 @@ function MinistryTable({
         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
           {[...ministries]
             .sort((a, b) => b.budget - a.budget)
-            .map((m) => (
+            .map((m, rank) => (
               <tr
                 key={m.id}
-                className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                className="hover:bg-accent-soft/40 transition-colors"
               >
+                <td className="px-4 py-3 text-center">
+                  <span
+                    className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+                      rank < 3
+                        ? "bg-accent-soft text-accent"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    {rank + 1}
+                  </span>
+                </td>
                 <td className="px-4 py-3">
                   <Link
                     href={`/ministry/${m.id}?year=${year}`}
-                    className="font-medium hover:text-[#7F77DD]"
+                    className="font-medium hover:text-accent transition-colors"
                   >
                     {m.name}
                   </Link>
@@ -281,14 +357,14 @@ function MinistryTable({
                     {m.departmentCount} หน่วยงาน
                   </p>
                 </td>
-                <td className="px-4 py-3 text-right font-mono tabular-nums">
-                  ฿{(m.budget / 1e9).toFixed(1)}B
+                <td className="px-4 py-3 text-right font-mono tabular-nums font-semibold">
+                  {(m.budget / 1e9).toLocaleString("th-TH", { maximumFractionDigits: 1 })}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex items-center justify-end gap-2">
                     <div className="w-16 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
                       <div
-                        className="h-1.5 rounded-full bg-[#7F77DD]"
+                        className="h-1.5 rounded-full bg-gradient-accent"
                         style={{ width: `${Math.min(m.percentage, 100)}%` }}
                       />
                     </div>
