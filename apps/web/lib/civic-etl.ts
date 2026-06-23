@@ -96,12 +96,21 @@ export async function buildAndPersistCivicYear(
 
   // Previous year's data for changePct / history — can be null for the first import
   const previousData = getBudgetYear(prevYearStr);
+  // Key prev-year amounts by ministry+dept+project NAME, not project name alone:
+  // generic plan names ("แผนงานบุคลากรภาครัฐ", "แผนงานยุทธศาสตร์…") repeat across
+  // many ministries, so a bare-name match collides cross-ministry and pairs a
+  // tiny line in one ministry with a huge aggregate in another → absurd
+  // change_pct (e.g. +1,800,000%). Scoping the key to the same ministry/dept
+  // matches the same recurring budget line across years; no match → treated as
+  // a new project (change_pct 0), which is the correct conservative behaviour.
   const prevAmounts = new Map<string, number>();
+  const prevKey = (ministry: string, dept: string, name: string) =>
+    `${ministry}|||${dept}|||${name}`;
   if (previousData) {
     for (const m of previousData.ministries) {
       for (const d of m.departments) {
         for (const p of d.projects) {
-          prevAmounts.set(p.name, p.amount);
+          prevAmounts.set(prevKey(m.name, d.name, p.name), p.amount);
         }
       }
     }
@@ -210,7 +219,7 @@ export async function buildAndPersistCivicYear(
           }
         }
 
-        const prevAmount = prevAmounts.get(projectName) ?? 0;
+        const prevAmount = prevAmounts.get(prevKey(ministryName, deptName, projectName)) ?? 0;
         const changePct =
           prevAmount > 0 ? Math.round(((acc.amount - prevAmount) / prevAmount) * 10000) / 100 : 0;
 
