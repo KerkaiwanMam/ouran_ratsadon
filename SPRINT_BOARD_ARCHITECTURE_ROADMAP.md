@@ -187,23 +187,26 @@
 
 ## 5️⃣ QA & AI Governance Track — Testing · Code Quality · AI Alignment / Anti-Hallucination
 
+> **อัปเดตตามโค้ดจริง:** security guardrails (sanitize/validate/rate limit) + anti-hallucination (aggregated-only chat + citations) **Done แล้ว** — แต่ **ช่องว่างใหญ่สุดของทั้งโปรเจกอยู่ที่นี่: ไม่มี automated test แม้แต่ไฟล์เดียว** (`*.test`/`*.spec` = 0, ไม่มี test runner) นี่คือ P0 คู่กับ LINE
+
 | ชื่องาน / ฟีเจอร์ | รายละเอียดเทคนิค | สถานะ | Priority | ฝ่าย/ผู้รับผิดชอบหลัก | ผลลัพธ์เชิงประสิทธิภาพ (Impact) |
 |---|---|---|---|---|---|
-| File sanitization | `sanitizeStringField()` (CSV injection) + `containsMacros()` (XLSX VBA) เรียกก่อน DB insert — **ห้ามถอด** | 🟢 Done | High | QA/Security | กัน injection/macro |
+| File sanitization | `sanitizeStringField()` (CSV injection) + `containsMacros()` (XLSX VBA) ก่อน DB insert — **ห้ามถอด** | 🟢 Done | High | QA/Security | กัน injection/macro |
 | Pre-upload validation | `Content-Length` + extension whitelist ก่อน `file.arrayBuffer()` | 🟢 Done | High | QA/Security | กัน memory exhaustion |
 | TypeScript strict (no `any`) | strict mode, functional components, conventional commits | 🟢 Done | Med | QA/Code Quality | code health พื้นฐาน |
-| **Verification layer (anti-hallucination)** | ทุก narrative มีปุ่ม "ดูข้อมูลจริง" → dashboard = source of truth กัน AI พูดเกินข้อมูล | 🟡 Doing | **High** | QA/AI Governance + Frontend | กลไกหลักกัน AI หลอน (40% ที่รอด) |
-| **One View One Truth enforcement** | test ว่าเลขเดียวกันตรงทุกหน้า (narrative=chart=Q&A) | 🟡 Doing | High | QA + Database | กัน conflicting numbers |
-| **PDPA Gate (ก่อนเปิด Chat Phase 3)** | ① consent แยกตอนเปิด Q&A ② ส่งเฉพาะ aggregated ③ mask counterparty ก่อนส่ง LLM ④ ระบุใน privacy policy | 🔵 **ToDo (คอขวด #3)** | **High** | QA/AI Governance + Backend | บล็อก Phase 3 จนกว่าจะเสร็จ; ความเสี่ยง #1 |
-| Bank statement snapshot tests | snapshot test ต่อ format/ธนาคาร + sanity check ยอดรวม/แถว | 🔵 ToDo | **High** | QA | กัน parser พังเงียบเมื่อแบงก์เปลี่ยน layout |
-| LLM cost guardrails | intent→query (token น้อย) + rate limit/user + model เล็กสำหรับ intent classification; เป้า cost/user < 10% ARPU | 🔵 ToDo | High | QA/AI Governance + Backend | กัน margin หาย (ARPU ฿299) |
-| Managed data / human-in-the-loop | override = labeled data feed กลับ ML แบบมี audit; share link revoke + log | 🔵 ToDo | Med | QA/Governance | คุณภาพ label + ตามรอยได้ |
+| Verification layer (anti-hallucination) | narrative/chat citation → href drill-down ไป `/transactions`; dashboard = source of truth | 🟢 Done | High | QA/AI Governance + Frontend | กลไกหลักกัน AI หลอน (40% ที่รอด) |
+| PDPA-safe Q&A | `/api/business/chat` ส่งเฉพาะ governed aggregates, **ไม่แตะ raw tx**, rule-based ไม่ส่งออกนอกระบบ | 🟢 Done | High | QA/AI Governance + Backend | ปลอดภัยตาม PDPA โดยออกแบบ |
+| **One View One Truth enforcement** | test ว่าเลขตรงทุกหน้า (narrative=chart=Q&A) — **ยังไม่มี test เพราะไม่มี test infra** | 🟡 Doing | High | QA + Database | กัน conflicting numbers |
+| **PDPA consent UI (ตอนต่อ LLM จริง)** | consent แยกตอนเปิด free-form Q&A + mask counterparty ก่อนส่ง LLM + ระบุใน privacy policy | 🔵 ToDo | High | QA/AI Governance + Backend | เปิด LLM ภายนอกได้อย่างถูกกฎหมาย |
+| **Automated test infra + bank snapshot tests** | ตั้ง Vitest + snapshot test ต่อ format/ธนาคาร + sanity check ยอดรวม/แถว — **ยังเป็น 0** | 🔵 **ToDo (P0)** | **High** | QA | กัน parser พังเงียบ + รากของทุก test อื่น |
+| **Test pyramid + coverage gate** | unit (analyzers/parsers/`lib/analytics`) + integration (API routes) + e2e Playwright (upload→dashboard→drill-down) ผูกใน CI | 🔵 **ToDo (P0)** | **High** | QA + DevOps | กระจายงานได้โดยไม่ break |
+| LLM cost guardrails | intent→query (token น้อย) + rate limit/user + model เล็ก; เป้า cost/user < 10% ARPU | 🔵 ToDo | High | QA/AI Governance + Backend | กัน margin หาย (ARPU ฿299) — เมื่อต่อ LLM |
+| Managed data / human-in-the-loop | override = labeled data (มี `CategoryRule` แล้ว) — เพิ่ม audit ของ override/share | 🟡 Doing | Med | QA/Governance | คุณภาพ label + ตามรอยได้ |
 | ML accuracy gate (Phase 3) | auto-categorize accuracy ≥ 85% บน data จริงก่อน rollout | 🔵 ToDo | Med | QA + Backend | กันแนะนำผิด → เสียความเชื่อ |
 | Email deliverability test | inbox-placement test, ตรวจ SPF/DKIM/DMARC | 🔵 ToDo | Med | QA + DevOps | scheduled report ไม่ลง spam |
-| **[Pro-Max] Test pyramid + coverage gate** | unit (analyzers/parsers) + integration (API routes) + e2e (Playwright critical path) ผูกใน CI | 🔵 ToDo | **High** | QA | กระจายงานได้โดยไม่ break |
-| **[Pro-Max] Golden-dataset eval สำหรับ narrative/Q&A** | ชุดคำถาม-คำตอบมาตรฐาน วัด regression ของ Layer 3 ทุก release | 🔵 ToDo | Med | QA/AI Governance | จับ AI หลอน/ตอบเพี้ยนอัตโนมัติ |
+| **[Pro-Max] Golden-dataset eval (narrative/Q&A)** | ชุดคำถาม-คำตอบมาตรฐาน วัด regression Layer 3 ทุก release | 🔵 ToDo | Med | QA/AI Governance | จับ AI หลอน/ตอบเพี้ยนอัตโนมัติ |
 | **[Pro-Max] Contract testing (Next.js ↔ FastAPI)** | Pact/schema test กัน parser response เปลี่ยนแล้ว backend พัง | 🔵 ToDo | Med | QA | ข้าม-service ปลอดภัย |
-| **[Pro-Max] Security review cadence + dependency scan** | Dependabot/`npm audit` + review PR ตาม checklist (rate limit, sanitize, planGate) | 🔵 ToDo | Med | QA/Security | กัน regress ของ security ที่ live แล้ว |
+| **[Pro-Max] Security review + dependency scan** | Dependabot/`npm audit` + PR checklist (rate limit, sanitize, planGate) | 🔵 ToDo | Med | QA/Security | กัน regress ของ security ที่ live แล้ว |
 
 ---
 
