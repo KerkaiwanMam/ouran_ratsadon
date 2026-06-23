@@ -22,7 +22,7 @@ _ตรวจสอบเมื่อ: 2026-06-08_
 - สร้าง `apps/web` (Next.js 14 + TypeScript + Tailwind + shadcn/ui) — ยังไม่มีแม้แต่โฟลเดอร์
 - สร้าง `apps/parser` (FastAPI microservice) — ยังไม่มี
 - สร้าง `prisma/schema.prisma` และเชื่อมกับ SQLite (dev)
-- เตรียม `data/budget-XXXX.json` อย่างน้อย 1 ปีงบประมาณ (2568) สำหรับ demo
+- เตรียม `apps/web/data/budget-XXXX.json` อย่างน้อย 1 ปีงบประมาณ (2568) สำหรับ demo
 
 ### C. Civic Layer (Phase 0 — เน้นก่อน เพราะเป็นหน้าตาของพอร์ต)
 - ดาวน์โหลด/ประมวลผล PDF งบประมาณจาก bb.go.th → script Python parser (`pdfplumber`)
@@ -64,7 +64,7 @@ _ตรวจสอบเมื่อ: 2026-06-08_
 |---|---|---|---|---|
 | 1 | Pre-0 (เอกสาร) | เขียน `project-brief.md`, `business-logic-v2.md`, `database-schema.md`, `api-spec.md`, ทำ wireframe หน้าใหม่ | ยังไม่เริ่ม (ไฟล์ไม่มี) | เอกสารอ้างอิงครบ พร้อมเริ่มเขียนโค้ด |
 | 2 | Pre-0 (scaffold) | สร้าง `apps/web` (Next.js+TS+Tailwind+shadcn), `apps/parser` (FastAPI), `prisma/schema.prisma`, โครง `data/` | ยังไม่เริ่ม (มีแค่ root package.json) | รัน `npm run dev` ขึ้นหน้าว่างได้ |
-| 3 | Phase 0 — Civic | เตรียมข้อมูลงบ 2568 เป็น JSON + เขียน red flag กฎ 1-2 | ยังไม่เริ่ม | มีไฟล์ `data/budget-2568.json` ใช้งานได้ |
+| 3 | Phase 0 — Civic | เตรียมข้อมูลงบ 2568 เป็น JSON + เขียน red flag กฎ 1-2 | ยังไม่เริ่ม | มีไฟล์ `apps/web/data/budget-2568.json` ใช้งานได้ |
 | 4 | Phase 0 — Civic | สร้างหน้า `/explore` (Treemap + ตัวกรองปี + drill-down) | ยังไม่เริ่ม | demo treemap ใช้งานได้จริง |
 | 5 | Phase 0 — Civic | สร้างหน้า `/search` และ `/project/[id]` | ยังไม่เริ่ม | ค้นหา-กรอง-ดูรายละเอียดโครงการได้ |
 | 6 | Phase 0 — Civic | export CSV + share/OG image | ยังไม่เริ่ม | ผู้ใช้ดาวน์โหลด/แชร์ได้ |

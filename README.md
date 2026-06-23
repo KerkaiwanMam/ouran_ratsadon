@@ -73,13 +73,13 @@
                   └──────────▲────────┘  └─────────┬───────────┘
                              │                      │
                   ┌──────────┴──────────┐  ┌────────▼────────────┐
-                  │ data/budget-XXXX.json│  │ apps/parser (FastAPI)│
+                  │ apps/web/data/*.json │  │ apps/parser (FastAPI)│
                   │ (source of truth,    │  │ pdfplumber/openpyxl  │
                   │  bulk-loaded once)   │  │ leak/forecast logic  │
                   └─────────────────────┘  └─────────────────────┘
 ```
 
-**กลยุทธ์ dual storage ของ Civic Layer**: `data/budget-XXXX.json` คือ source of truth → bulk-load เข้า Postgres (สำหรับ query ที่กรอง/เรียงลำดับ/แบ่งหน้า เช่น `/api/civic/search`) **และ** ใช้สร้าง in-memory tree cache (สำหรับ bounded reads เช่น `/explore` drill-down) พร้อมกัน — รายละเอียดเต็มอยู่ใน [`docs/analyzer-spec.md`](./docs/analyzer-spec.md)
+**กลยุทธ์ storage ของ Civic Layer (cache-only read path)**: `apps/web/data/budget-XXXX.json` คือ source of truth → โหลดเข้า in-memory tree cache (`lib/civic-cache.ts`) ครั้งแรกต่อปีงบประมาณ **ทุก** civic read (`/explore`, `/search`, export, project detail, drill-down, compare) อ่านจาก cache นี้ ไม่แตะ Postgres เลย ส่วน `BudgetLineItem` (Postgres) เป็นเพียง write-side staging ตอน admin upload (ETL aggregate → เขียน JSON tree กลับ) — รายละเอียดเต็มอยู่ใน [`docs/analyzer-spec.md`](./docs/analyzer-spec.md)
 
 ---
 
@@ -89,9 +89,9 @@
 ouran_ratsadon/
 ├── apps/
 │   ├── web/      # Next.js frontend (Civic + Business + Admin)
+│   │   └── data/ # ข้อมูลงบประมาณ+การคลังประมวลผลล่วงหน้า (budget-XXXX.json, fiscal-summary.json) — civic read path
 │   └── parser/   # Python FastAPI microservice (PDF/Excel parsing, analyzers)
 ├── prisma/       # Database schema + migrations
-├── data/         # ข้อมูลงบประมาณที่ประมวลผลล่วงหน้า (budget-XXXX.json)
 ├── sample-data/  # ไฟล์ SME ตัวอย่างสำหรับทดสอบ Business Layer
 └── docs/         # สเปกละเอียดทุกส่วน (ดู docs index ใน CLAUDE.md)
 ```

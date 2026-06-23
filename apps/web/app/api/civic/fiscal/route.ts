@@ -80,7 +80,9 @@ function toResponse(row: {
 async function loadJsonFallback() {
   const fs = (await import("fs")).default;
   const path = (await import("path")).default;
-  const filePath = path.resolve(process.cwd(), "../../data/fiscal-summary.json");
+  // Same data dir as the civic budget cache (lib/civic-cache.ts): process.cwd()/data
+  // → apps/web/data at runtime. Single source of truth for all civic JSON.
+  const filePath = path.join(process.cwd(), "data", "fiscal-summary.json");
   const raw = JSON.parse(fs.readFileSync(filePath, "utf-8")) as {
     fiscal_years: {
       fiscal_year: string;
