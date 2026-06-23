@@ -140,7 +140,7 @@
 | ชื่องาน / ฟีเจอร์ | รายละเอียดเทคนิค | สถานะ | Priority | ฝ่าย/ผู้รับผิดชอบหลัก | ผลลัพธ์เชิงประสิทธิภาพ (Impact) |
 |---|---|---|---|---|---|
 | Neon PostgreSQL + Prisma ORM | serverless `ap-southeast-1`, pooled + direct URL, type-safe queries + migrations | 🟢 Done | High | Database | source of truth ฝั่ง write |
-| In-memory civic tree cache | `Map<year, CivicBudgetYear>` lazy-load จาก `data/budget-XXXX.json`, rebuild on start — **civic read path เดียว, ห้ามอ่าน Postgres** | 🟢 Done | High | Database + Backend | `/explore` เร็ว ไม่แตะ DB |
+| In-memory civic tree cache | `Map<year, CivicBudgetYear>` lazy-load จาก `apps/web/data/budget-XXXX.json`, rebuild on start — **civic read path เดียว, ห้ามอ่าน Postgres** | 🟢 Done | High | Database + Backend | `/explore` เร็ว ไม่แตะ DB |
 | Civic write-side staging | `BudgetLineItem` (flat) → ETL aggregate → `CivicBudgetYear` JSON tree; `deleteMany` by fiscalYear ตอน replace | 🟢 Done | Med | Database | แยก write/read ชัดเจน |
 | `rawValues Json?` บน Transaction | เก็บ row ก่อน normalize ไว้สำหรับ ML retraining (Phase 3) — **ห้าม strip** | 🟢 Done | High | Database | ฐานของ data flywheel |
 | Version race guard | `@@unique([fiscalYear, version])` + `prisma.$transaction` ครอบ admin upload | 🟢 Done | High | Database | กัน data version ชนกัน |

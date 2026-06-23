@@ -81,7 +81,7 @@ Phase 2 work starts now per the list above.
 
 **Phase 2 complete (2026-06-09).** All Phase 2 items built:
 
-- **Macro Fiscal Intelligence**: `data/fiscal-summary.json` (2558–2568, 11 years), `FiscalYearSummary` Prisma model, `GET /api/civic/fiscal`, `/fiscal-overview` page (Recharts ComposedChart, stat strip, debt/GDP bar, data table), fiscal context bar on `/explore` (SWR-fetched amber banner)
+- **Macro Fiscal Intelligence**: `apps/web/data/fiscal-summary.json` (2558–2568, 11 years), `FiscalYearSummary` Prisma model, `GET /api/civic/fiscal`, `/fiscal-overview` page (Recharts ComposedChart, stat strip, debt/GDP bar, data table), fiscal context bar on `/explore` (SWR-fetched amber banner)
 - **Bank statement parsing**: `apps/parser/parsers/bank_statement_parser.py` (SCB, KBANK, BBL; BE/AD date, Thai dash, channel inference), `POST /parse/bank-statement` endpoint, upload UI tabs wired with two-stage parser→API flow
 - **Accounting export parsing**: `apps/parser/parsers/accounting_export_parser.py` (PEAK, FlowAccount; header autodetect, column aliases, BE/AD date), `POST /parse/accounting-export` endpoint, upload UI tabs (PEAK, FlowAccount) added
 - **Team workspace**: `Workspace`, `WorkspaceMember`, `WorkspaceFile` Prisma models, `GET/POST /api/workspace`, `GET/POST /api/workspace/[id]/members`, workspace invite email (Resend), `/workspace` dashboard page, `POST /api/workspace/join` + `/workspace/join` accept page

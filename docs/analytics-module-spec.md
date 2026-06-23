@@ -35,7 +35,7 @@ MonthlyFinancial   DiagnosticInsight  ForecastSnapshot  Recommendation   (existi
 
 ### ทำไมไม่แยก Data Warehouse
 
-- Civic Layer ใช้ cache-only read path (in-memory cache จาก `data/budget-XXXX.json`) ตามที่ตัดสินใจไว้แล้วใน `analyzer-spec.md` — เพียงพอสำหรับ analytics ระดับ 1-2 ของ Civic
+- Civic Layer ใช้ cache-only read path (in-memory cache จาก `apps/web/data/budget-XXXX.json`) ตามที่ตัดสินใจไว้แล้วใน `analyzer-spec.md` — เพียงพอสำหรับ analytics ระดับ 1-2 ของ Civic
 - ขนาดข้อมูล Business Layer คือ "ไฟล์ที่ user อัปโหลดเอง" (หลักพัน-หมื่นแถว/คน) ไม่ใช่สเกลที่ต้องมี warehouse แยก — Postgres + index ที่มีอยู่ (`@@index([userId, date])`) เพียงพอ
 - แทนที่จะแยก DB ให้ **pre-aggregate เป็นตารางสรุป** (ด้านล่าง) คำนวณตอน upload เสร็จ/cron แทนการ aggregate สดทุกครั้งที่โหลด dashboard — ลด query load บน core tables โดยไม่เพิ่ม ops overhead ของระบบแยก
 - Revisit ตอน Phase 2 ถ้ามี real usage data บ่งชี้ว่าจำเป็น (read-replica สำหรับ analytics query หนัก) — ใส่ไว้เป็น "deferred" สอดคล้องกับแนวทางที่ใช้ตัดสินใจ leak rules อื่นๆ ในโปรเจกต์

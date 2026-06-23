@@ -74,7 +74,7 @@ Anything learned during research that future steps depend on. Add to this file *
 - Auth helper at `lib/auth.ts` returns `{ user, session } | null`
 
 ## Sample data
-- `/data/budget-2568.json` has 4,821 projects across 20 ministries
+- `/apps/web/data/budget-2568.json` has 4,821 projects across 20 ministries
 - Schema validated against `BudgetData` Zod schema — passes
 ```
 
