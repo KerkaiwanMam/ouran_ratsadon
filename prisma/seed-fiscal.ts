@@ -33,7 +33,7 @@ interface FiscalSummaryFile {
 }
 
 async function main() {
-  const filePath = path.resolve(__dirname, "../data/fiscal-summary.json");
+  const filePath = path.resolve(__dirname, "../apps/web/data/fiscal-summary.json");
   const raw = JSON.parse(fs.readFileSync(filePath, "utf-8")) as FiscalSummaryFile;
 
   console.log(`Seeding ${raw.fiscal_years.length} fiscal year records…`);

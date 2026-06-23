@@ -18,7 +18,7 @@ A two-layer web platform: a public Civic Layer for exploring Thai government bud
 - **PDF parsing**: pdfplumber (Python)
 - **Excel parsing**: openpyxl + pandas (Python)
 - **Database**: SQLite (dev) / PostgreSQL (prod) + Prisma ORM
-- **Cache**: In-memory tree cache for Civic Layer (lazy-loaded per fiscal year from `data/budget-XXXX.json` — see `docs/analyzer-spec.md` for the storage strategy; this is the only civic read path, do not add Postgres reads)
+- **Cache**: In-memory tree cache for Civic Layer (lazy-loaded per fiscal year from `apps/web/data/budget-XXXX.json` — see `docs/analyzer-spec.md` for the storage strategy; this is the only civic read path, do not add Postgres reads)
 - **Deploy**: Vercel (frontend) + Railway/Render (Python service)
 
 ## Project structure
@@ -37,13 +37,13 @@ ouran_ratsadon/
 │   │   │   └── (admin)/              # Admin panel
 │   │   ├── components/               # ui/ civic/ business/ charts/ layout/ shared/
 │   │   ├── hooks/ lib/ types/ utils/
+│   │   └── data/                     # Civic read path (process.cwd()/data): budget-XXXX.json, fiscal-summary.json — single source of truth
 │   └── parser/                       # Python FastAPI microservice
 │       ├── main.py
 │       ├── parsers/                  # pdf, excel, bank_statement, accounting_export
 │       ├── analyzers/                # leak_detector, forecaster, categorizer
 │       ├── models/ utils/
 ├── prisma/schema.prisma
-├── data/                             # Pre-processed government data: budget-XXXX.json
 ├── skills/                           # nextjs-developer, typescript-pro, nodejs-api-developer,
 │                                     # fullstack-architect, code-reviewer, planning-with-files
 │   └── graphify/SKILL.md             # /graphify — codebase → knowledge graph (community detection, HTML viz, JSON)
@@ -68,7 +68,7 @@ ouran_ratsadon/
 
 ## Civic Layer data storage strategy (decided — do not mix patterns)
 
-Civic data is **cache-only on the read path**: `data/budget-XXXX.json` is the source of truth and is loaded into an in-memory tree cache (`lib/civic-cache.ts`) on first access per fiscal year. **All civic reads** — `/explore`, `/search`, `/api/civic/export/*`, project detail, drill-down, compare — read from this cache, never from Postgres. `BudgetLineItem` (Postgres) is a flat, write-side staging table populated during admin upload: the ETL step aggregates these rows into the `CivicBudgetYear` JSON tree (written to `data/budget-XXXX.json`), and the table is otherwise only `deleteMany`'d by `fiscalYear` when a version is replaced/deleted. Do not add Postgres reads to civic serving routes. Full pipeline, workflow, and red-flag/leak/forecast rule details: `docs/analyzer-spec.md`.
+Civic data is **cache-only on the read path**: `apps/web/data/budget-XXXX.json` is the source of truth and is loaded into an in-memory tree cache (`lib/civic-cache.ts`) on first access per fiscal year. **All civic JSON lives in one directory — `apps/web/data/`** (`budget-XXXX.json` per year + `fiscal-summary.json`), resolved at runtime as `process.cwd()/data`. There is no repo-root `data/` dir; do not re-introduce one or read via `../../data` (breaks the Vercel serverless bundle, which only includes the `apps/web` subtree). **All civic reads** — `/explore`, `/search`, `/api/civic/export/*`, project detail, drill-down, compare — read from this cache, never from Postgres. `BudgetLineItem` (Postgres) is a flat, write-side staging table populated during admin upload: the ETL step aggregates these rows into the `CivicBudgetYear` JSON tree (written to `apps/web/data/budget-XXXX.json`), and the table is otherwise only `deleteMany`'d by `fiscalYear` when a version is replaced/deleted. Do not add Postgres reads to civic serving routes. Full pipeline, workflow, and red-flag/leak/forecast rule details: `docs/analyzer-spec.md`.
 
 ## Priority matrix — Phase 0 focus (do not start Business Layer until Civic 0a is demo-ready)
 

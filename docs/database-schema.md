@@ -9,7 +9,7 @@ ORM: Prisma
 
 Two-layer architecture means two data domains:
 
-1. **Civic Layer data**: Pre-processed government budget data — **cache-only on the read path** (decided, see `analyzer-spec.md` § Data storage strategy): `data/budget-XXXX.json` is the source of truth and is lazily loaded into an in-memory tree cache (`lib/civic-cache.ts`) per fiscal year. **All** civic reads — `/explore`, `/search`, `/api/civic/export/*`, drill-down, compare — serve from this cache. Postgres (`BudgetLineItem`) is a write-side ETL staging table, never read by serving routes.
+1. **Civic Layer data**: Pre-processed government budget data — **cache-only on the read path** (decided, see `analyzer-spec.md` § Data storage strategy): `apps/web/data/budget-XXXX.json` is the source of truth and is lazily loaded into an in-memory tree cache (`lib/civic-cache.ts`) per fiscal year. **All** civic reads — `/explore`, `/search`, `/api/civic/export/*`, drill-down, compare — serve from this cache. Postgres (`BudgetLineItem`) is a write-side ETL staging table, never read by serving routes.
 2. **Business Layer data**: User accounts, uploaded files, parsed financial data, subscriptions, alerts, analytics. Stored in SQL.
 
 For Civic Layer JSON structure, see `analyzer-spec.md`.
@@ -18,13 +18,13 @@ For Civic Layer JSON structure, see `analyzer-spec.md`.
 
 ## Civic Layer storage
 
-> ⚠️ Updated 2026-06-14 — earlier drafts of this doc described a "dual-store" target with `BudgetMinistry`/`BudgetDepartment`/`BudgetProject` Postgres tables serving `/search` and `/export`. Those tables were never built. The actual, implemented architecture is cache-only: `BudgetLineItem` is a flat ETL-staging table, and every civic read (including search/export/filter/pagination) is served from the in-memory cache built from `data/budget-XXXX.json`. Do not add Postgres reads to civic serving routes.
+> ⚠️ Updated 2026-06-14 — earlier drafts of this doc described a "dual-store" target with `BudgetMinistry`/`BudgetDepartment`/`BudgetProject` Postgres tables serving `/search` and `/export`. Those tables were never built. The actual, implemented architecture is cache-only: `BudgetLineItem` is a flat ETL-staging table, and every civic read (including search/export/filter/pagination) is served from the in-memory cache built from `apps/web/data/budget-XXXX.json`. Do not add Postgres reads to civic serving routes.
 
 ### Source of truth
-- Location: `data/budget-{year}.json`, committed to repo — written by the ETL step on each admin upload
+- Location: `apps/web/data/budget-{year}.json`, committed to repo — written by the ETL step on each admin upload
 
 ### In-memory tree cache (the only civic read path)
-- Lazily loaded per fiscal year directly from `data/budget-{year}.json` (`JSON.parse`) on first request, via `lib/civic-cache.ts` — no Postgres round trip
+- Lazily loaded per fiscal year directly from `apps/web/data/budget-{year}.json` (`JSON.parse`) on first request, via `lib/civic-cache.ts` — no Postgres round trip
 - Serves **everything**: `/explore` treemap/sunburst, drill-down breadcrumb, year-over-year compare, red-flag aggregation, AND `/api/civic/search` / `/api/civic/export/*` (filter/sort/pagination run in-memory over the cached array)
 - Small (≤ a few MB/year, ~4 years = single-digit MB total) — in-memory is appropriate at this scale
 
@@ -32,7 +32,7 @@ For Civic Layer JSON structure, see `analyzer-spec.md`.
 
 ## Civic Layer SQL table — BudgetLineItem (write-side ETL staging, Postgres)
 
-Flat, 1-row-per-line-item mirror of the parsed PDF/Excel budget documents (per the project's Data Dict). On admin upload, raw rows are bulk-inserted here; the ETL step then reads them back (`findMany({ where: { fiscalYear } })`) and aggregates them into the `CivicBudgetYear` JSON tree written to `data/budget-XXXX.json`. Roll-up mapping: `ministry` → ministry node, `budgetaryUnit` → department node, `output`/`project` (mutually exclusive — XOR) → project node, `categoryLv1-6` → per-project expenditure-category breakdown. Rows are removed via `deleteMany({ where: { fiscalYear } })` when a version is replaced/deleted. **Not queried by any serving route** — durable raw-data audit trail + ETL source only.
+Flat, 1-row-per-line-item mirror of the parsed PDF/Excel budget documents (per the project's Data Dict). On admin upload, raw rows are bulk-inserted here; the ETL step then reads them back (`findMany({ where: { fiscalYear } })`) and aggregates them into the `CivicBudgetYear` JSON tree written to `apps/web/data/budget-XXXX.json`. Roll-up mapping: `ministry` → ministry node, `budgetaryUnit` → department node, `output`/`project` (mutually exclusive — XOR) → project node, `categoryLv1-6` → per-project expenditure-category breakdown. Rows are removed via `deleteMany({ where: { fiscalYear } })` when a version is replaced/deleted. **Not queried by any serving route** — durable raw-data audit trail + ETL source only.
 
 | Column          | Type     | Notes                                                                 |
 |-----------------|----------|-----------------------------------------------------------------------|
@@ -524,7 +524,7 @@ Personal API key for developer/integration access. `keyHash` stores a SHA-256 he
 ## Phase 2 — Fiscal Intelligence
 
 ### FiscalYearSummary
-Thai national macro-fiscal summary per fiscal year (ปีงบประมาณ). Seeded from `data/fiscal-summary.json` — **not** a live API call. Source: สศค./กรมบัญชีกลาง/สบน./สำนักงบประมาณ. Full context in `fiscal-intelligence-spec.md`.
+Thai national macro-fiscal summary per fiscal year (ปีงบประมาณ). Seeded from `apps/web/data/fiscal-summary.json` — **not** a live API call. Source: สศค./กรมบัญชีกลาง/สบน./สำนักงบประมาณ. Full context in `fiscal-intelligence-spec.md`.
 
 | Column           | Type      | Notes                                            |
 |------------------|-----------|------------------------------------------------------|
@@ -643,7 +643,7 @@ Current live schema = single baseline migration `20260614120000_baseline` (cover
 - `User`, email/password auth only (Google OAuth fields unused until Phase 1)
 - `Subscription` with `isManuallyGranted` flag (no Stripe integration yet)
 - `File`, `Transaction` with `leakFlag`/`leakSeverity`/`leakReason` populated by the **Outlier rule only**
-- `BudgetLineItem` (Postgres ETL staging) + in-memory cache from `data/budget-XXXX.json` (cache-only read path — see above) with Rules 1 & 2 red flags only
+- `BudgetLineItem` (Postgres ETL staging) + in-memory cache from `apps/web/data/budget-XXXX.json` (cache-only read path — see above) with Rules 1 & 2 red flags only
 - `CivicDataVersion` for admin upload tracking
 
 ### Phase 1
@@ -667,7 +667,7 @@ Current live schema = single baseline migration `20260614120000_baseline` (cover
 
 ## Performance notes
 
-- **Civic Layer**: Cache-only (see above) — all reads (tree, search, export, filter, pagination) come from the in-memory cache built from `data/budget-XXXX.json`. Postgres `BudgetLineItem` is write-side ETL staging only; never query it from a serving route.
+- **Civic Layer**: Cache-only (see above) — all reads (tree, search, export, filter, pagination) come from the in-memory cache built from `apps/web/data/budget-XXXX.json`. Postgres `BudgetLineItem` is write-side ETL staging only; never query it from a serving route.
 - **Business Layer**: Index on `(userId, date)` for `Transaction` is critical — most queries filter by user + date range.
 - **Analytics**: Tier 1-3 tables (`MonthlyFinancialSummary`, `DiagnosticInsight`, `ForecastSnapshot`) are pre-computed batch (post-upload + nightly cron), not aggregated live — see `analytics-module-spec.md`.
 - **JSONB fields** (`Transaction.metadata`/`rawValues`, `DiagnosticInsight.relatedTxIds`, `ForecastSnapshot.inputWindow`/`whatIf`, `Alert.context`, `AdminLog.detail`, `SavedSearch.filters`) are queryable via Prisma's JSON filtering but are not indexed — avoid filtering on them in hot paths.
