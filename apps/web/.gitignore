@@ -1,0 +1,3 @@
+
+# Raw civic budget source files (parsed into budget-XXXX.json, not committed)
+data/*.csv
